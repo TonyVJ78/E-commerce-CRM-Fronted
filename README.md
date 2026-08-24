@@ -1,8 +1,8 @@
-# 🛍️ Kantu Market — Frontend (Angular 19)
+# Kantu Market — Frontend (Angular 19)
 
 Interfaz web y módulo CRM para la plataforma SaaS multitenant **Kantu Market**, desarrollada con **Angular 19** utilizando componentes autónomos (Standalone Components) y diseño moderno responsivo.
 
-## 🏗️ Estructura del Repositorio
+## Estructura del Repositorio
 
 ```
 E-commerce-CRM-Fronted/
@@ -26,7 +26,7 @@ E-commerce-CRM-Fronted/
 └── README.md
 ```
 
-## 🚀 Inicio Rápido
+##  Inicio Rápido
 
 ### Requisitos previos
 - [Node.js](https://nodejs.org/) (v20 o superior)
@@ -54,7 +54,7 @@ docker run -p 4200:4200 kantu-frontend
 
 ---
 
-## 📋 Casos de Uso Implementados (Sprint 0)
+## Casos de Uso Implementados (Sprint 0)
 
 1. ✅ **CU-01 — Registro de usuario**: Formulario reactivo con selector de rol (`empresa` o `cliente`), validaciones en tiempo real de longitud, mayúsculas, números y confirmación de contraseñas.
 2. ✅ **CU-02 — Inicio de sesión**: Formulario de login, conexión con API JWT, almacenamiento seguro de tokens y manejo reactivo del estado de autenticación.
@@ -65,7 +65,7 @@ docker run -p 4200:4200 kantu-frontend
 
 ---
 
-## 🛡️ Seguridad y Arquitectura en el Cliente
+##  Seguridad y Arquitectura en el Cliente
 
 - **Standalone Components**: Componentes modulares y desacoplados sin necesidad de `NgModule`.
 - **AuthGuard**: Protección de rutas privadas (`/perfil`, `/crear-tienda`, `/admin`).
@@ -73,10 +73,3 @@ docker run -p 4200:4200 kantu-frontend
 - **Formularios Reactivos**: `ReactiveFormsModule` con validaciones estrictas y mensajes de error interactivos.
 
 ---
-
-## 🎨 Identidad Visual
-
-Paleta de colores inspirada en la tricolor boliviana:
-- 🔴 **Rojo** `#C8102E` — Color primario, llamadas a la acción (botones principales), alertas.
-- 🟡 **Amarillo** `#F4D03F` — Acentos, detalles, bordes destacados.
-- 🟢 **Verde** `#27AE60` — Badges activos, estados de éxito y confirmaciones.
