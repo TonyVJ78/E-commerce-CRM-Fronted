@@ -1,8 +1,8 @@
-# 🛍️ Kantu Market
+#  Kantu Market
 
 Plataforma SaaS multitenant que permite a empresas bolivianas crear y administrar su propia tienda online, con módulo de CRM y motor de recomendaciones por IA.
 
-## 🏗️ Arquitectura
+##  Arquitectura
 
 ```
 kantu-market/
@@ -14,7 +14,7 @@ kantu-market/
 └── README.md
 ```
 
-## 🚀 Inicio Rápido
+## Inicio Rápido
 
 ### Requisitos previos
 
@@ -58,7 +58,7 @@ Esto levanta 3 servicios:
 docker-compose exec server python manage.py createsuperuser
 ```
 
-## 📋 Sprint 0 — Casos de uso implementados
+## Sprint 0 — Casos de uso implementados
 
 1. ✅ Registrar usuario (email, contraseña, rol)
 2. ✅ Iniciar sesión (JWT)
@@ -67,7 +67,7 @@ docker-compose exec server python manage.py createsuperuser
 5. ✅ Recuperar contraseña (email con token)
 6. ✅ Registrar nueva tienda (asociada al usuario autenticado)
 
-## 🔌 Endpoints API
+##  Endpoints API
 
 | Método | Endpoint | Descripción | Auth |
 |--------|----------|-------------|------|
@@ -82,7 +82,7 @@ docker-compose exec server python manage.py createsuperuser
 | `GET` | `/api/tiendas/` | Listar tiendas del usuario | ✅ |
 | `POST` | `/api/tiendas/` | Crear nueva tienda | ✅ |
 
-## 📧 Recuperación de contraseña
+##  Recuperación de contraseña
 
 En desarrollo, los correos se imprimen en la **consola de Django** (backend de consola). Para ver el enlace de recuperación:
 
@@ -98,20 +98,12 @@ EMAIL_HOST_USER=tu-email@gmail.com
 EMAIL_HOST_PASSWORD=tu-app-password
 ```
 
-## 🗄️ Modelos de base de datos (Sprint 0)
+## Modelos de base de datos (Sprint 0)
 
 - **Rol** — `administrador`, `empresa`, `cliente`
 - **Usuario** — Extiende AbstractUser, email como login
 - **BitacoraAcceso** — Registro de cada login exitoso
 - **Tienda** — Tienda del tenant, asociada al propietario
-
-## 🎨 Identidad Visual
-
-Paleta inspirada en los colores patrios de Bolivia:
-- 🔴 **Rojo** `#C8102E` — Color primario, botones principales, alertas
-- 🟡 **Amarillo** `#F4D03F` — Acentos, gradientes, detalles
-- 🟢 **Verde** `#27AE60` — Estados de éxito, badges activos
-
-## 📄 Licencia
+##  Licencia
 
 Proyecto académico — Todos los derechos reservados.
