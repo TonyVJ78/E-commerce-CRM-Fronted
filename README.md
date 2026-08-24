@@ -51,18 +51,6 @@ cd client
 docker build -t kantu-frontend .
 docker run -p 4200:4200 kantu-frontend
 ```
-
----
-
-## Casos de Uso Implementados (Sprint 0)
-
-1. ✅ **CU-01 — Registro de usuario**: Formulario reactivo con selector de rol (`empresa` o `cliente`), validaciones en tiempo real de longitud, mayúsculas, números y confirmación de contraseñas.
-2. ✅ **CU-02 — Inicio de sesión**: Formulario de login, conexión con API JWT, almacenamiento seguro de tokens y manejo reactivo del estado de autenticación.
-3. ✅ **CU-03 — Cierre de sesión**: Limpieza del almacenamiento local e invalidación del token en backend.
-4. ✅ **CU-04 — Perfil de usuario**: Visualización de información del usuario autenticado y formulario para editar nombre, apellido y datos de contacto.
-5. ✅ **CU-05 — Recuperación de contraseña**: Flujo completo en 2 pasos: solicitud de enlace por correo y formulario de confirmación de nueva contraseña mediante token.
-6. ✅ **CU-06 — Registro de tienda**: Formulario para creación de tienda online (nombre, slug, descripción, teléfono, dirección) para usuarios con rol `empresa`.
-
 ---
 
 ##  Seguridad y Arquitectura en el Cliente
