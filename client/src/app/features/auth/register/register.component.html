@@ -1,0 +1,134 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1 class="auth-logo">🛍️ Kantu Market</h1>
+      <p class="auth-subtitle">Crea tu cuenta</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="first_name">Nombre</label>
+          <input id="first_name" type="text" formControlName="first_name" placeholder="Juan"
+            [class.input-error]="registerForm.get('first_name')?.invalid && registerForm.get('first_name')?.touched" />
+          <span class="error-text" *ngIf="registerForm.get('first_name')?.hasError('required') && registerForm.get('first_name')?.touched">
+            El nombre es obligatorio.
+          </span>
+        </div>
+        <div class="form-group">
+          <label for="last_name">Apellido</label>
+          <input id="last_name" type="text" formControlName="last_name" placeholder="Pérez"
+            [class.input-error]="registerForm.get('last_name')?.invalid && registerForm.get('last_name')?.touched" />
+          <span class="error-text" *ngIf="registerForm.get('last_name')?.hasError('required') && registerForm.get('last_name')?.touched">
+            El apellido es obligatorio.
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="reg-email">Correo electrónico</label>
+        <input id="reg-email" type="email" formControlName="email" placeholder="tu@correo.com"
+          [class.input-error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" />
+        <span class="error-text" *ngIf="registerForm.get('email')?.hasError('required') && registerForm.get('email')?.touched">
+          El correo es obligatorio.
+        </span>
+        <span class="error-text" *ngIf="registerForm.get('email')?.hasError('email') && registerForm.get('email')?.touched">
+          Ingresa un correo válido.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="rol_id">Tipo de cuenta</label>
+        <select id="rol_id" formControlName="rol_id">
+          <option [value]="3">Cliente (Comprador)</option>
+          <option [value]="2">Empresa (Vendedor)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="reg-password">Contraseña</label>
+        <div class="password-input-wrapper">
+          <input
+            id="reg-password"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Mínimo 8 caracteres"
+            [class.input-error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+          />
+          <button
+            type="button"
+            class="password-toggle-btn"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Ver contraseña'"
+          >
+            {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+          </button>
+        </div>
+
+        <!-- Requisitos interactivos de la contraseña -->
+        <div class="password-requirements" *ngIf="registerForm.get('password')?.value || registerForm.get('password')?.touched">
+          <p class="req-title">Requisitos de la contraseña:</p>
+          <ul class="req-list">
+            <li [class.req-met]="hasMinLength">
+              <span class="req-icon">{{ hasMinLength ? '✔' : '○' }}</span>
+              Mínimo 8 caracteres
+            </li>
+            <li [class.req-met]="hasLetter">
+              <span class="req-icon">{{ hasLetter ? '✔' : '○' }}</span>
+              Al menos una letra (A-Z o a-z)
+            </li>
+            <li [class.req-met]="hasNumber">
+              <span class="req-icon">{{ hasNumber ? '✔' : '○' }}</span>
+              Al menos un número (0-9)
+            </li>
+            <li [class.req-met]="hasSpecial">
+              <span class="req-icon">{{ hasSpecial ? '✔' : '○' }}</span>
+              Al menos un carácter especial (ej. !&#64;#$%^&*?)
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password_confirm">Confirmar contraseña</label>
+        <div class="password-input-wrapper">
+          <input
+            id="password_confirm"
+            [type]="showPasswordConfirm ? 'text' : 'password'"
+            formControlName="password_confirm"
+            placeholder="Repite tu contraseña"
+            [class.input-error]="registerForm.get('password_confirm')?.touched && registerForm.hasError('passwordMismatch')"
+          />
+          <button
+            type="button"
+            class="password-toggle-btn"
+            (click)="togglePasswordConfirmVisibility()"
+            [attr.aria-label]="showPasswordConfirm ? 'Ocultar confirmación' : 'Ver confirmación'"
+          >
+            {{ showPasswordConfirm ? '👁️' : '👁️‍🗨️' }}
+          </button>
+        </div>
+        <span class="error-text" *ngIf="registerForm.get('password_confirm')?.touched && registerForm.hasError('passwordMismatch')">
+          Las contraseñas no coinciden.
+        </span>
+      </div>
+
+      <div class="error-banner" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <div class="success-banner" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="registerForm.invalid || loading">
+        <span *ngIf="!loading">Crear Cuenta</span>
+        <span *ngIf="loading" class="spinner"></span>
+      </button>
+    </form>
+
+    <div class="auth-links">
+      <p>¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+    </div>
+  </div>
+</div>
