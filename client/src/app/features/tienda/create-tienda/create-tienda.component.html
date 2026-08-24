@@ -1,0 +1,83 @@
+<div class="page-container">
+  <div class="section-header">
+    <h2>Mis Tiendas</h2>
+    <button class="btn btn-primary" (click)="toggleForm()">
+      {{ showForm ? 'Cancelar' : '+ Nueva Tienda' }}
+    </button>
+  </div>
+
+  <div class="success-banner" *ngIf="message">{{ message }}</div>
+
+  <!-- Formulario de nueva tienda -->
+  <div class="tienda-form-card" *ngIf="showForm" @fadeIn>
+    <h3>Registrar Nueva Tienda</h3>
+    <form [formGroup]="tiendaForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-group">
+        <label for="tienda-nombre">Nombre de la tienda *</label>
+        <input id="tienda-nombre" type="text" formControlName="nombre" placeholder="Mi Tienda Bolivia"
+          [class.input-error]="tiendaForm.get('nombre')?.invalid && tiendaForm.get('nombre')?.touched" />
+        <span class="error-text" *ngIf="tiendaForm.get('nombre')?.hasError('required') && tiendaForm.get('nombre')?.touched">
+          El nombre es obligatorio.
+        </span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="tienda-slug">Slug (URL)</label>
+          <input id="tienda-slug" type="text" formControlName="slug" placeholder="mi-tienda-bolivia" />
+          <span class="help-text">Se auto-genera desde el nombre si se deja vacío.</span>
+        </div>
+        <div class="form-group">
+          <label for="tienda-color">Color primario</label>
+          <div class="color-input-wrapper">
+            <input id="tienda-color" type="color" formControlName="color_primario" />
+            <span class="color-value">{{ tiendaForm.get('color_primario')?.value }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="tienda-logo">URL del logo</label>
+        <input id="tienda-logo" type="url" formControlName="logo_url" placeholder="https://ejemplo.com/logo.png" />
+      </div>
+
+      <div class="form-group">
+        <label for="tienda-desc">Descripción</label>
+        <textarea id="tienda-desc" formControlName="descripcion" rows="3"
+          placeholder="Describe brevemente tu tienda..."></textarea>
+      </div>
+
+      <div class="error-banner" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="tiendaForm.invalid || loading">
+        <span *ngIf="!loading">Crear Tienda</span>
+        <span *ngIf="loading" class="spinner"></span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Lista de tiendas -->
+  <div class="tiendas-grid" *ngIf="tiendas.length > 0">
+    <div class="tienda-card" *ngFor="let tienda of tiendas">
+      <div class="tienda-color-bar" [style.background-color]="tienda.color_primario"></div>
+      <div class="tienda-card-body">
+        <div class="tienda-card-header">
+          <h3>{{ tienda.nombre }}</h3>
+          <span class="badge" [class.badge-active]="tienda.activa" [class.badge-inactive]="!tienda.activa">
+            {{ tienda.activa ? 'Activa' : 'Inactiva' }}
+          </span>
+        </div>
+        <p class="tienda-slug">/{{ tienda.slug }}</p>
+        <p class="tienda-desc" *ngIf="tienda.descripcion">{{ tienda.descripcion }}</p>
+        <p class="tienda-date">Creada el {{ tienda.fecha_creacion | date:'mediumDate' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="tiendas.length === 0 && !showForm">
+    <div class="empty-icon">🏪</div>
+    <h3>Aún no tienes tiendas</h3>
+    <p>Crea tu primera tienda para empezar a vender en Kantu Market.</p>
+    <button class="btn btn-primary" (click)="toggleForm()">Crear mi primera tienda</button>
+  </div>
+</div>

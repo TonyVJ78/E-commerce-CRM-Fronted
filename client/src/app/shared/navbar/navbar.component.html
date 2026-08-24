@@ -1,0 +1,36 @@
+<nav class="navbar">
+  <div class="navbar-container">
+    <a routerLink="/" class="navbar-brand">
+      <span class="brand-icon">🛍️</span>
+      <span class="brand-text">Kantu Market</span>
+    </a>
+
+    <button class="menu-toggle" (click)="toggleMenu()" [class.active]="menuOpen" aria-label="Menu principal">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="navbar-menu" [class.open]="menuOpen">
+      <ng-container *ngIf="authService.isAuthenticated; else guestLinks">
+        <!-- Enlaces según rol -->
+        <a *ngIf="(authService.currentUser$ | async)?.rol === 'cliente'" routerLink="/inicio" routerLinkActive="active" (click)="menuOpen = false">Inicio</a>
+        <a *ngIf="(authService.currentUser$ | async)?.rol === 'administrador'" routerLink="/dashboard" routerLinkActive="active" (click)="menuOpen = false">Dashboard</a>
+        <a *ngIf="(authService.currentUser$ | async)?.rol === 'empresa'" routerLink="/tiendas" routerLinkActive="active" (click)="menuOpen = false">Mis Tiendas</a>
+        
+        <a routerLink="/perfil" routerLinkActive="active" (click)="menuOpen = false">Mi Perfil</a>
+        
+        <div class="navbar-user">
+          <span class="user-email">{{ (authService.currentUser$ | async)?.email }}</span>
+          <span class="user-role-badge">{{ (authService.currentUser$ | async)?.rol }}</span>
+          <button class="btn btn-outline btn-sm" (click)="logout()">Cerrar Sesión</button>
+        </div>
+      </ng-container>
+
+      <ng-template #guestLinks>
+        <a routerLink="/login" routerLinkActive="active" (click)="menuOpen = false">Iniciar Sesión</a>
+        <a routerLink="/registro" routerLinkActive="active" class="btn btn-primary btn-sm" (click)="menuOpen = false">Registrarse</a>
+      </ng-template>
+    </div>
+  </div>
+</nav>

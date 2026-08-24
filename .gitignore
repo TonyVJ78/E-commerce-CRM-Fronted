@@ -1,0 +1,35 @@
+# Kantu Market — .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.env
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+
+# Node / Angular
+node_modules/
+client/dist/
+client/.angular/
+client/.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
