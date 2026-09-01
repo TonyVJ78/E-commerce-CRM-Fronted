@@ -16,6 +16,7 @@
         <!-- Enlaces según rol -->
         <a *ngIf="(authService.currentUser$ | async)?.rol === 'cliente'" routerLink="/inicio" routerLinkActive="active" (click)="menuOpen = false">Inicio</a>
         <a *ngIf="(authService.currentUser$ | async)?.rol === 'administrador'" routerLink="/dashboard" routerLinkActive="active" (click)="menuOpen = false">Dashboard</a>
+        <a *ngIf="(authService.currentUser$ | async)?.rol === 'administrador'" routerLink="/auditoria" routerLinkActive="active" (click)="menuOpen = false">Bitácora</a>
         <a *ngIf="(authService.currentUser$ | async)?.rol === 'empresa'" routerLink="/tiendas" routerLinkActive="active" (click)="menuOpen = false">Mis Tiendas</a>
         
         <a routerLink="/perfil" routerLinkActive="active" (click)="menuOpen = false">Mi Perfil</a>

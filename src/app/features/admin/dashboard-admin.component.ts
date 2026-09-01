@@ -18,20 +18,20 @@ import { AuthService } from '../../core/services/auth.service';
 
         <div class="info-grid">
           <div class="info-item">
-            <span class="info-icon">🏢</span>
-            <h4>Gestión Multitenant</h4>
-            <p>Módulo de administración avanzada de tiendas programado para futuros sprints.</p>
+            <h4>Bitácora y Auditoría</h4>
+            <p>Historial de accesos (login) y registro de cambios en la plataforma. <a routerLink="/auditoria">Abrir bitácora</a>.</p>
           </div>
           <div class="info-item">
             <span class="info-icon">⚙️</span>
             <h4>Panel Django Admin</h4>
-            <p>Acceso administrativo completo a la base de datos disponible en <a href="http://localhost:8000/admin/" target="_blank">/admin/</a>.</p>
+            <p>Acceso administrativo completo a la base de datos disponible en <a href="http://localhost:8001/admin/" target="_blank">/admin/</a>.</p>
           </div>
         </div>
 
         <div class="quick-actions">
+          <a routerLink="/auditoria" class="btn btn-primary">Ver Bitácora</a>
           <a routerLink="/perfil" class="btn btn-secondary">Mi Perfil</a>
-          <a href="http://localhost:8000/admin/" target="_blank" class="btn btn-primary">Abrir Django Admin ↗</a>
+          <a href="http://localhost:8001/admin/" target="_blank" class="btn btn-secondary">Django Admin ↗</a>
         </div>
       </div>
     </div>

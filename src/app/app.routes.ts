@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, empresaGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, empresaGuard, adminGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -40,6 +40,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/admin/dashboard-admin.component').then(m => m.DashboardAdminComponent)
+  },
+  {
+    path: 'auditoria',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent)
   },
   {
     path: 'perfil',
