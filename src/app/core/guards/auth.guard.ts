@@ -33,6 +33,31 @@ export const guestGuard: CanActivateFn = () => {
   return false;
 };
 
+export const adminGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  const rol = authService.currentUser?.rol;
+  if (rol === 'administrador') {
+    return true;
+  }
+
+  // Redirigir según rol si no es administrador
+  if (rol === 'cliente') {
+    router.navigate(['/inicio']);
+  } else if (rol === 'empresa') {
+    router.navigate(['/tiendas']);
+  } else {
+    router.navigate(['/perfil']);
+  }
+  return false;
+};
+
 export const empresaGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
