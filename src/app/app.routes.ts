@@ -60,6 +60,12 @@ export const routes: Routes = [
       import('./features/tienda/create-tienda/create-tienda.component').then(m => m.CreateTiendaComponent)
   },
   {
+    path: 'panel-vendedor',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/dashboard-empresa/dashboard-empresa.component').then(m => m.DashboardEmpresaComponent)
+  },
+  {
     path: '**',
     redirectTo: 'login'
   }

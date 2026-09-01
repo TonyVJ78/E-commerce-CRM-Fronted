@@ -24,6 +24,21 @@ export interface CreateTiendaData {
   descripcion?: string;
 }
 
+export interface VentaDia {
+  fecha: string;
+  cantidad: number;
+}
+
+export interface DashboardMetrics {
+  total_productos: number;
+  productos_activos: number;
+  total_pedidos: number;
+  pedidos_pendientes: number;
+  ingresos_totales: number;
+  productos_bajo_stock: number;
+  grafico_ventas: VentaDia[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,5 +53,9 @@ export class TiendaService {
 
   crear(data: CreateTiendaData): Observable<Tienda> {
     return this.http.post<Tienda>(`${this.apiUrl}/`, data);
+  }
+
+  getDashboardMetrics(): Observable<DashboardMetrics> {
+    return this.http.get<DashboardMetrics>(`${this.apiUrl}/dashboard/`);
   }
 }
