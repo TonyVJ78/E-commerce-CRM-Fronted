@@ -57,7 +57,13 @@ export const routes: Routes = [
     path: 'tiendas',
     canActivate: [empresaGuard],
     loadComponent: () =>
-      import('./features/tienda/create-tienda/create-tienda.component').then(m => m.CreateTiendaComponent)
+       import('./features/tienda/create-tienda/create-tienda.component').then(m => m.CreateTiendaComponent)
+  },
+  {
+    path: 'tiendas/:tiendaId/productos/nuevo',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/producto/create-producto/create-producto.component').then(m => m.CreateProductoComponent)
   },
   {
     path: 'panel-vendedor',
