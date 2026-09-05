@@ -4,7 +4,7 @@ Serializers del módulo de Tiendas.
 
 from rest_framework import serializers
 
-from .models import Tienda
+from .models import Producto, Tienda
 
 
 class TiendaSerializer(serializers.ModelSerializer):
@@ -29,3 +29,16 @@ class TiendaSerializer(serializers.ModelSerializer):
         if value and Tienda.objects.filter(slug=value).exists():
             raise serializers.ValidationError('Este slug ya está en uso.')
         return value
+
+
+class ProductoSerializer(serializers.ModelSerializer):
+    tienda_nombre = serializers.CharField(source='tienda.nombre', read_only=True)
+
+    class Meta:
+        model = Producto
+        fields = [
+            'id', 'tienda', 'tienda_nombre', 'nombre', 'descripcion', 'precio',
+            'stock', 'categoria', 'imagen_url', 'activo', 'fecha_creacion',
+            'fecha_actualizacion',
+        ]
+        read_only_fields = ['id', 'activo', 'fecha_creacion', 'fecha_actualizacion']

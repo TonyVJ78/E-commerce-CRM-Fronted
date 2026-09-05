@@ -54,6 +54,12 @@ export const routes: Routes = [
       import('./features/tienda/create-tienda/create-tienda.component').then(m => m.CreateTiendaComponent)
   },
   {
+    path: 'tiendas/productos',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/create-tienda/gestion-productos/gestion-productos.componet').then(m => m.GestionProductosComponent)
+  },
+  {
     path: '**',
     redirectTo: 'login'
   }
