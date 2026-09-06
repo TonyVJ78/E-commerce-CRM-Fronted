@@ -69,20 +69,43 @@
 
     <section class="permisos-panel" *ngIf="rolSeleccionado; else sinRol">
       <h2>Permisos de «{{ rolSeleccionado.nombre }}»</h2>
-      <p class="hint" *ngIf="permisosCatalogo.length === 0">No hay permisos en el catálogo.</p>
+      <p class="hint" *ngIf="matriz.length === 0">No hay permisos en el catálogo.</p>
 
-      <ul class="permisos-check">
-        <li *ngFor="let permiso of permisosCatalogo">
-          <label>
-            <input
-              type="checkbox"
-              [checked]="permisosMarcados.has(permiso.id)"
-              (change)="togglePermiso(permiso.id)" />
-            <span class="permiso-nombre">{{ permiso.nombre }}</span>
-            <code class="permiso-codigo">{{ permiso.codigo }}</code>
-          </label>
-        </li>
-      </ul>
+      <div class="matriz-wrap" *ngIf="matriz.length > 0">
+        <table class="matriz">
+          <thead>
+            <tr>
+              <th class="col-modulo">Módulo</th>
+              <th *ngFor="let a of acciones">{{ etiquetaAccion[a] }}</th>
+              <th class="col-todo">Todo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let fila of matriz">
+              <td class="col-modulo">
+                <span class="mod-nombre">{{ fila.etiqueta }}</span>
+                <code class="mod-codigo">{{ fila.modulo }}</code>
+              </td>
+              <td *ngFor="let a of acciones" class="celda">
+                <input
+                  *ngIf="fila.celdas[a] as permiso; else sinCelda"
+                  type="checkbox"
+                  [attr.aria-label]="permiso.nombre"
+                  [checked]="permisosMarcados.has(permiso.id)"
+                  (change)="togglePermiso(permiso.id)" />
+                <ng-template #sinCelda><span class="na">—</span></ng-template>
+              </td>
+              <td class="celda">
+                <input
+                  type="checkbox"
+                  title="Marcar/desmarcar toda la fila"
+                  [checked]="moduloCompleto(fila)"
+                  (change)="toggleModulo(fila)" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <button
         class="btn btn-primary"
