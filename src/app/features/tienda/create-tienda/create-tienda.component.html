@@ -70,6 +70,9 @@
         <p class="tienda-slug">/{{ tienda.slug }}</p>
         <p class="tienda-desc" *ngIf="tienda.descripcion">{{ tienda.descripcion }}</p>
         <p class="tienda-date">Creada el {{ tienda.fecha_creacion | date:'mediumDate' }}</p>
+        <a class="product-action" [routerLink]="['/tiendas', tienda.id, 'productos', 'nuevo']">
+          Registrar producto <span>→</span>
+        </a>
       </div>
     </div>
   </div>

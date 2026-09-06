@@ -5,6 +5,25 @@
   margin-bottom: 2rem;
 }
 
+.product-action {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  margin-top: 1rem;
+  color: var(--primary);
+  font-size: .82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.product-action span {
+  transition: transform .2s ease;
+}
+
+.product-action:hover span {
+  transform: translateX(3px);
+}
+
 .section-header h2 {
   font-size: 1.75rem;
   color: var(--text-primary);
