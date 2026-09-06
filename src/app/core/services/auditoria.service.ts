@@ -12,9 +12,12 @@ export interface Paginated<T> {
 
 export interface BitacoraAcceso {
   id: number;
-  usuario: number;
-  usuario_email: string;
-  usuario_nombre: string;
+  usuario: number | null;
+  usuario_email: string | null;
+  usuario_nombre: string | null;
+  email_intento: string;
+  exitoso: boolean;
+  motivo: string;
   fecha: string;
   ip: string;
   dispositivo: string;
@@ -35,6 +38,7 @@ export interface LogAuditoria {
 export interface FiltrosBitacora {
   usuario?: string;
   ip?: string;
+  exitoso?: boolean;
   fecha_desde?: string;
   fecha_hasta?: string;
   page?: number;

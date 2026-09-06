@@ -33,6 +33,15 @@
       <input type="text" [(ngModel)]="filtroIp" name="ip" placeholder="contiene…" />
     </div>
 
+    <div class="filtro-campo" *ngIf="pestania === 'accesos'">
+      <label>Estado</label>
+      <select [(ngModel)]="filtroExitoso" name="exitoso">
+        <option value="">Todos</option>
+        <option value="true">Exitosos</option>
+        <option value="false">Fallidos</option>
+      </select>
+    </div>
+
     <div class="filtro-campo" *ngIf="pestania === 'cambios'">
       <label>Tabla</label>
       <input type="text" [(ngModel)]="filtroTabla" name="tabla" placeholder="tienda, sesion…" />
@@ -72,23 +81,30 @@
       <thead>
         <tr>
           <th>Fecha</th>
+          <th>Estado</th>
           <th>Usuario</th>
           <th>IP</th>
           <th>Dispositivo</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let a of accesos">
+        <tr *ngFor="let a of accesos" [class.fila-fallida]="!a.exitoso">
           <td>{{ a.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</td>
           <td>
-            <span class="nombre">{{ a.usuario_nombre }}</span>
-            <span class="email">{{ a.usuario_email }}</span>
+            <span class="badge" [class.badge-ok]="a.exitoso" [class.badge-error]="!a.exitoso">
+              {{ a.exitoso ? 'Exitoso' : 'Fallido' }}
+            </span>
+            <span class="motivo" *ngIf="!a.exitoso && a.motivo">{{ a.motivo }}</span>
+          </td>
+          <td>
+            <span class="nombre">{{ a.usuario_nombre || a.email_intento || '—' }}</span>
+            <span class="email">{{ a.usuario_email || a.email_intento }}</span>
           </td>
           <td>{{ a.ip }}</td>
           <td class="dispositivo" [title]="a.dispositivo">{{ a.dispositivo || '—' }}</td>
         </tr>
         <tr *ngIf="accesos.length === 0">
-          <td colspan="4" class="vacio">No hay registros de acceso con esos filtros.</td>
+          <td colspan="5" class="vacio">No hay registros de acceso con esos filtros.</td>
         </tr>
       </tbody>
     </table>
