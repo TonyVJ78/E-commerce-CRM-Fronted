@@ -48,6 +48,12 @@ export const routes: Routes = [
       import('./features/admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent)
   },
   {
+    path: 'accesos',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/admin/accesos/accesos.component').then(m => m.AccesosComponent)
+  },
+  {
     path: 'perfil',
     canActivate: [authGuard],
     loadComponent: () =>

@@ -22,6 +22,10 @@ import { AuthService } from '../../core/services/auth.service';
             <p>Historial de accesos (login) y registro de cambios en la plataforma. <a routerLink="/auditoria">Abrir bitácora</a>.</p>
           </div>
           <div class="info-item">
+            <h4>Roles y permisos</h4>
+            <p>Gestiona los roles del sistema, los permisos de cada rol y el rol asignado a cada usuario. <a routerLink="/accesos">Abrir accesos</a>.</p>
+          </div>
+          <div class="info-item">
             <span class="info-icon">⚙️</span>
             <h4>Panel Django Admin</h4>
             <p>Acceso administrativo completo a la base de datos disponible en <a href="http://localhost:8001/admin/" target="_blank">/admin/</a>.</p>
@@ -30,6 +34,7 @@ import { AuthService } from '../../core/services/auth.service';
 
         <div class="quick-actions">
           <a routerLink="/auditoria" class="btn btn-primary">Ver Bitácora</a>
+          <a routerLink="/accesos" class="btn btn-primary">Roles y permisos</a>
           <a routerLink="/perfil" class="btn btn-secondary">Mi Perfil</a>
           <a href="http://localhost:8001/admin/" target="_blank" class="btn btn-secondary">Django Admin ↗</a>
         </div>
