@@ -150,39 +150,37 @@
 .vacio-panel,
 .hint { color: var(--text-secondary); font-size: 0.9rem; }
 
-.permisos-check {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+.matriz-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+.matriz { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.matriz th,
+.matriz td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
 }
-.permisos-check label {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.9rem;
+.matriz thead th {
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
-.permisos-check label:hover { background: var(--bg); }
-.permisos-check input[type='checkbox'],
+.matriz tbody tr:last-child td { border-bottom: none; }
+.matriz tbody tr:hover { background: var(--primary-light); }
+.matriz .col-modulo { text-align: left; white-space: nowrap; }
+.matriz .col-todo { border-left: 1px solid var(--border); }
+.matriz td.celda { border-left: 1px solid var(--border); }
+.matriz .mod-nombre { display: block; font-weight: 600; color: var(--text-primary); }
+.matriz .mod-codigo { font-size: 0.7rem; color: var(--text-secondary); }
+.matriz .na { color: var(--border); }
+.matriz input[type='checkbox'],
 .tabla input[type='checkbox'] {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1.05rem;
+  height: 1.05rem;
   accent-color: var(--primary);
   cursor: pointer;
-}
-.permiso-nombre { color: var(--text-primary); font-weight: 600; }
-.permiso-codigo {
-  margin-left: auto;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  background: var(--bg);
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-sm);
 }
 
 .filtros {

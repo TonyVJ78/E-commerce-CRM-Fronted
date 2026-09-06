@@ -14,6 +14,34 @@ type Pestania = 'roles' | 'usuarios';
 
 const PAGE_SIZE = 20;
 
+const ACCIONES = ['ver', 'crear', 'editar', 'eliminar'] as const;
+type Accion = (typeof ACCIONES)[number];
+
+const ETIQUETA_ACCION: Record<Accion, string> = {
+  ver: 'Ver',
+  crear: 'Crear',
+  editar: 'Editar',
+  eliminar: 'Eliminar'
+};
+
+const ETIQUETA_MODULO: Record<string, string> = {
+  accesos: 'Roles y permisos',
+  usuarios: 'Usuarios',
+  bitacora: 'Bitácora y auditoría',
+  tiendas: 'Tiendas',
+  catalogo: 'Catálogo',
+  pedidos: 'Pedidos',
+  crm: 'CRM',
+  marketing: 'Marketing',
+  ia: 'IA y recomendaciones'
+};
+
+interface FilaMatriz {
+  modulo: string;
+  etiqueta: string;
+  celdas: Record<Accion, Permiso | undefined>;
+}
+
 @Component({
   selector: 'app-accesos',
   standalone: true,
@@ -31,6 +59,9 @@ export class AccesosComponent implements OnInit {
   // --- Roles y permisos ---
   roles: Rol[] = [];
   permisosCatalogo: Permiso[] = [];
+  matriz: FilaMatriz[] = [];
+  readonly acciones = ACCIONES;
+  readonly etiquetaAccion = ETIQUETA_ACCION;
   rolSeleccionado: Rol | null = null;
   permisosMarcados = new Set<number>();
   guardandoPermisos = false;
@@ -60,10 +91,44 @@ export class AccesosComponent implements OnInit {
     // invalidado y cierra la sesión. Encadenándolas, el interceptor sólo refresca una vez.
     this.cargarRoles(() => {
       this.accesos.listarPermisos().subscribe({
-        next: (p) => (this.permisosCatalogo = p),
+        next: (p) => {
+          this.permisosCatalogo = p;
+          this.construirMatriz();
+        },
         error: () => {}
       });
     });
+  }
+
+  private construirMatriz(): void {
+    const modulos: string[] = [];
+    for (const p of this.permisosCatalogo) {
+      if (!modulos.includes(p.modulo)) modulos.push(p.modulo);
+    }
+    this.matriz = modulos.map((m) => ({
+      modulo: m,
+      etiqueta: ETIQUETA_MODULO[m] ?? m,
+      celdas: ACCIONES.reduce((acc, a) => {
+        acc[a] = this.permisosCatalogo.find((p) => p.modulo === m && p.accion === a);
+        return acc;
+      }, {} as Record<Accion, Permiso | undefined>)
+    }));
+  }
+
+  /** ¿todas las acciones existentes de este módulo están marcadas? */
+  moduloCompleto(fila: FilaMatriz): boolean {
+    const permisos = ACCIONES.map((a) => fila.celdas[a]).filter((p): p is Permiso => !!p);
+    return permisos.length > 0 && permisos.every((p) => this.permisosMarcados.has(p.id));
+  }
+
+  toggleModulo(fila: FilaMatriz): void {
+    const marcar = !this.moduloCompleto(fila);
+    for (const a of ACCIONES) {
+      const permiso = fila.celdas[a];
+      if (!permiso) continue;
+      if (marcar) this.permisosMarcados.add(permiso.id);
+      else this.permisosMarcados.delete(permiso.id);
+    }
   }
 
   get totalPaginas(): number {

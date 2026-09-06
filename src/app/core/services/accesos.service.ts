@@ -6,8 +6,10 @@ import { Paginated } from './auditoria.service';
 
 export interface Permiso {
   id: number;
-  codigo: string;
+  codigo: string;   // "<modulo>.<accion>"
   nombre: string;
+  modulo: string;
+  accion: string;   // 'ver' | 'crear' | 'editar' | 'eliminar'
 }
 
 export interface Rol {
