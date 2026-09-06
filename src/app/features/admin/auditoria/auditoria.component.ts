@@ -30,6 +30,7 @@ export class AuditoriaComponent implements OnInit {
   filtroFechaHasta = '';
   // Filtros propios de cada pestaña
   filtroIp = '';
+  filtroExitoso = '';   // '' | 'true' | 'false'
   filtroTabla = '';
   filtroAccion = '';
 
@@ -73,6 +74,7 @@ export class AuditoriaComponent implements OnInit {
     this.filtroFechaDesde = '';
     this.filtroFechaHasta = '';
     this.filtroIp = '';
+    this.filtroExitoso = '';
     this.filtroTabla = '';
     this.filtroAccion = '';
     this.pagina = 1;
@@ -101,6 +103,7 @@ export class AuditoriaComponent implements OnInit {
       const filtros: FiltrosBitacora = {
         usuario: this.filtroUsuario || undefined,
         ip: this.filtroIp || undefined,
+        exitoso: this.filtroExitoso === '' ? undefined : this.filtroExitoso === 'true',
         fecha_desde: this.filtroFechaDesde || undefined,
         fecha_hasta: this.filtroFechaHasta || undefined,
         page: this.pagina,
