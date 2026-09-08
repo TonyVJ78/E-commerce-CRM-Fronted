@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, empresaGuard, adminGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, empresaGuard, adminGuard, clienteGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -31,7 +31,7 @@ export const routes: Routes = [
   },
   {
     path: 'inicio',
-    canActivate: [authGuard],
+    canActivate: [clienteGuard],
     loadComponent: () =>
       import('./features/home/home-cliente.component').then(m => m.HomeClienteComponent)
   },
