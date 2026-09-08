@@ -14,6 +14,28 @@ export const authGuard: CanActivateFn = () => {
   return false;
 };
 
+export const clienteGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated) {
+    router.navigate(['/login']);
+    return false;
+  }
+
+  const rol = authService.currentUser?.rol;
+  if (rol === 'cliente') {
+    return true;
+  }
+
+  if (rol === 'administrador') {
+    router.navigate(['/dashboard']);
+  } else {
+    router.navigate(['/perfil']);
+  }
+  return false;
+};
+
 export const guestGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
