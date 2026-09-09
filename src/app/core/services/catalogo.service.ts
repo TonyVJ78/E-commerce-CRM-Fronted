@@ -1,41 +1,46 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import {
+  TiendaCatalogo,
+  VarianteCatalogo,
+  ProductoCatalogo,
+  CategoriaCatalogo
+} from '../models/catalogo.model';
 
-export interface TiendaCatalogo {
-  id: number;
-  nombre: string;
-  slug: string;
-  logo_url: string;
-  color_primario: string;
-  descripcion: string;
-}
-
-export interface VarianteCatalogo {
-  id: number;
-  nombre_variante: string;
-  precio_adicional: string;
-  sku_variante: string;
-}
-
-export interface ProductoCatalogo {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  precio_base: string;
-  sku: string;
-  variantes: VarianteCatalogo[];
-}
+export type { TiendaCatalogo, VarianteCatalogo, ProductoCatalogo, CategoriaCatalogo };
 
 @Injectable({ providedIn: 'root' })
 export class CatalogoService {
-  private apiUrl = `${environment.apiUrl}/catalogo`;
+  private readonly apiUrl = `${environment.apiUrl}/catalogo`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   listarTiendas(): Observable<TiendaCatalogo[]> {
     return this.http.get<TiendaCatalogo[]>(`${this.apiUrl}/tiendas/`);
+  }
+
+  listarCategorias(tiendaId?: number): Observable<CategoriaCatalogo[]> {
+    let params = new HttpParams();
+    if (tiendaId !== undefined && tiendaId !== null) {
+      params = params.set('tienda', tiendaId.toString());
+    }
+    return this.http.get<CategoriaCatalogo[]>(`${this.apiUrl}/categorias/`, { params });
+  }
+
+  listarTodosLosProductos(filtros?: { categoria?: number; tienda?: number; q?: string }): Observable<ProductoCatalogo[]> {
+    let params = new HttpParams();
+    if (filtros?.categoria) {
+      params = params.set('categoria', filtros.categoria.toString());
+    }
+    if (filtros?.tienda) {
+      params = params.set('tienda', filtros.tienda.toString());
+    }
+    if (filtros?.q) {
+      params = params.set('q', filtros.q.trim());
+    }
+    return this.http.get<ProductoCatalogo[]>(`${this.apiUrl}/productos/`, { params });
   }
 
   listarProductos(tiendaId: number): Observable<ProductoCatalogo[]> {

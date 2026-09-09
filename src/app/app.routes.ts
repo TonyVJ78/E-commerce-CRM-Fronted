@@ -69,7 +69,7 @@ export const routes: Routes = [
     path: 'tiendas/productos',
     canActivate: [empresaGuard],
     loadComponent: () =>
-      import('./features/tienda/create-tienda/gestion-productos/gestion-productos.component').then(m => m.GestionProductosComponent)
+      import('./features/tienda/gestion-productos/gestion-productos.component').then(m => m.GestionProductosComponent)
   },
   {
     path: 'tiendas/:tiendaId/productos/nuevo',

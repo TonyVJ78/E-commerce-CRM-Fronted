@@ -2,60 +2,33 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Paginated } from './auditoria.service';
+import {
+  Paginated,
+  Permiso,
+  Rol,
+  PermisosDeRol,
+  RolRef,
+  UsuarioAdmin,
+  FiltrosUsuarios
+} from '../models';
 
-export interface Permiso {
-  id: number;
-  codigo: string;   // "<modulo>.<accion>"
-  nombre: string;
-  modulo: string;
-  accion: string;   // 'ver' | 'crear' | 'editar' | 'eliminar'
-}
-
-export interface Rol {
-  id: number;
-  nombre: string;
-  permisos: Permiso[];
-  es_semilla: boolean;
-  usuarios_count: number;
-}
-
-export interface PermisosDeRol {
-  asignados: number[];
-  disponibles: Permiso[];
-}
-
-export interface RolRef {
-  id: number;
-  nombre: string;
-}
-
-export interface UsuarioAdmin {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  rol: RolRef | null;
-  activo: boolean;
-  is_active: boolean;
-  fecha_registro: string;
-}
-
-export interface FiltrosUsuarios {
-  rol?: string;
-  activo?: boolean;
-  buscar?: string;
-  page?: number;
-  page_size?: number;
-}
+export type {
+  Paginated,
+  Permiso,
+  Rol,
+  PermisosDeRol,
+  RolRef,
+  UsuarioAdmin,
+  FiltrosUsuarios
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class AccesosService {
-  private apiUrl = environment.apiUrl;
+  private readonly apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   private toParams(filtros: object): HttpParams {
     let params = new HttpParams();

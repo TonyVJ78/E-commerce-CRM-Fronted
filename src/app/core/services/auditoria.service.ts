@@ -2,66 +2,29 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import {
+  Paginated,
+  BitacoraAcceso,
+  LogAuditoria,
+  FiltrosBitacora,
+  FiltrosLogs
+} from '../models';
 
-export interface Paginated<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
-export interface BitacoraAcceso {
-  id: number;
-  usuario: number | null;
-  usuario_email: string | null;
-  usuario_nombre: string | null;
-  email_intento: string;
-  exitoso: boolean;
-  motivo: string;
-  fecha: string;
-  ip: string;
-  dispositivo: string;
-}
-
-export interface LogAuditoria {
-  id: number;
-  usuario: number | null;
-  usuario_email: string | null;
-  tabla_afectada: string;
-  registro_id: number;
-  accion: string;
-  datos_anteriores: any;
-  datos_nuevos: any;
-  fecha: string;
-}
-
-export interface FiltrosBitacora {
-  usuario?: string;
-  ip?: string;
-  exitoso?: boolean;
-  fecha_desde?: string;
-  fecha_hasta?: string;
-  page?: number;
-  page_size?: number;
-}
-
-export interface FiltrosLogs {
-  usuario?: string;
-  tabla?: string;
-  accion?: string;
-  fecha_desde?: string;
-  fecha_hasta?: string;
-  page?: number;
-  page_size?: number;
-}
+export type {
+  Paginated,
+  BitacoraAcceso,
+  LogAuditoria,
+  FiltrosBitacora,
+  FiltrosLogs
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuditoriaService {
-  private apiUrl = `${environment.apiUrl}/auditoria`;
+  private readonly apiUrl = `${environment.apiUrl}/auditoria`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   private toParams(filtros: object): HttpParams {
     let params = new HttpParams();

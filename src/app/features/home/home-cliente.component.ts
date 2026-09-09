@@ -3,328 +3,183 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  CatalogoService,
   ProductoCatalogo,
   TiendaCatalogo,
-  VarianteCatalogo
-} from '../../core/services/catalogo.service';
+  VarianteCatalogo,
+  CategoriaCatalogo
+} from '../../core/models';
+import { CatalogoService } from '../../core/services/catalogo.service';
 import { CarritoService } from '../../core/services/carrito.service';
 
 @Component({
   selector: 'app-home-cliente',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <div class="page-container catalogo-page">
-      <section class="catalogo-header">
-        <div>
-          <span class="catalogo-badge">Mercado Digital Boliviano</span>
-          <h1>Catálogo de productos</h1>
-          <p>Selecciona una tienda y agrega una variante a tu carrito.</p>
-        </div>
-
-        <div class="selector-tienda" *ngIf="tiendas.length > 0">
-          <label for="tienda-catalogo">Tienda</label>
-          <select
-            id="tienda-catalogo"
-            [(ngModel)]="tiendaSeleccionadaId"
-            (ngModelChange)="cargarProductos()"
-          >
-            <option *ngFor="let tienda of tiendas" [ngValue]="tienda.id">
-              {{ tienda.nombre }}
-            </option>
-          </select>
-        </div>
-      </section>
-
-      <p class="alert alert-success" role="status" *ngIf="mensajeExito">
-        {{ mensajeExito }}
-      </p>
-      <p class="alert alert-error" role="alert" *ngIf="mensajeError">
-        {{ mensajeError }}
-      </p>
-
-      <div class="loading-state" *ngIf="cargandoTiendas || cargandoProductos">
-        Cargando catálogo...
-      </div>
-
-      <div class="empty-state" *ngIf="!cargandoTiendas && tiendas.length === 0 && !mensajeError">
-        <h3>No hay tiendas disponibles</h3>
-      </div>
-
-      <div
-        class="empty-state"
-        *ngIf="!cargandoProductos && tiendaSeleccionadaId && productos.length === 0 && !mensajeError"
-      >
-        <h3>Esta tienda no tiene productos</h3>
-      </div>
-
-      <section class="productos-grid" *ngIf="!cargandoProductos && productos.length > 0">
-        <article class="producto-card" *ngFor="let producto of productos">
-          <div class="producto-info">
-            <span class="producto-sku" *ngIf="producto.sku">SKU: {{ producto.sku }}</span>
-            <h2>{{ producto.nombre }}</h2>
-            <p class="producto-descripcion" *ngIf="producto.descripcion">
-              {{ producto.descripcion }}
-            </p>
-            <p class="precio-base">Precio base: Bs {{ producto.precio_base }}</p>
-          </div>
-
-          <div class="variantes">
-            <h3>Variantes</h3>
-            <p class="sin-variantes" *ngIf="producto.variantes.length === 0">
-              Este producto no tiene variantes disponibles.
-            </p>
-
-            <div class="variante-row" *ngFor="let variante of producto.variantes">
-              <div>
-                <strong>{{ variante.nombre_variante }}</strong>
-                <span *ngIf="variante.sku_variante">SKU: {{ variante.sku_variante }}</span>
-                <span>Precio adicional: Bs {{ variante.precio_adicional }}</span>
-              </div>
-              <button
-                type="button"
-                class="btn btn-primary"
-                [disabled]="agregandoVarianteId !== null"
-                (click)="agregarAlCarrito(producto, variante)"
-              >
-                {{ agregandoVarianteId === variante.id ? 'Agregando...' : 'Agregar al carrito' }}
-              </button>
-            </div>
-          </div>
-        </article>
-      </section>
-    </div>
-  `,
-  styles: [`
-    .catalogo-page {
-      padding-top: 2rem;
-      padding-bottom: 3rem;
-    }
-
-    .catalogo-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 2rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .catalogo-badge {
-      display: inline-block;
-      color: var(--success);
-      font-size: 0.82rem;
-      font-weight: 700;
-      margin-bottom: 0.45rem;
-    }
-
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.35rem;
-    }
-
-    .catalogo-header p,
-    .producto-descripcion,
-    .sin-variantes {
-      color: var(--text-secondary);
-    }
-
-    .selector-tienda {
-      min-width: 250px;
-    }
-
-    .selector-tienda label {
-      display: block;
-      font-weight: 700;
-      margin-bottom: 0.4rem;
-    }
-
-    .selector-tienda select {
-      width: 100%;
-      padding: 0.7rem;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      background: var(--surface);
-    }
-
-    .alert {
-      border-radius: var(--radius-md);
-      margin-bottom: 1rem;
-      padding: 0.85rem 1rem;
-    }
-
-    .alert-success {
-      color: var(--success);
-      background: rgba(39, 174, 96, 0.1);
-      border: 1px solid rgba(39, 174, 96, 0.35);
-    }
-
-    .alert-error {
-      color: var(--primary);
-      background: rgba(200, 16, 46, 0.08);
-      border: 1px solid rgba(200, 16, 46, 0.25);
-    }
-
-    .loading-state,
-    .empty-state {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 2rem;
-      text-align: center;
-    }
-
-    .productos-grid {
-      display: grid;
-      gap: 1.25rem;
-    }
-
-    .producto-card {
-      display: grid;
-      grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.2fr);
-      gap: 1.5rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 1.5rem;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .producto-card h2 {
-      margin: 0.35rem 0 0.65rem;
-    }
-
-    .producto-sku,
-    .variante-row span {
-      display: block;
-      color: var(--text-secondary);
-      font-size: 0.82rem;
-    }
-
-    .precio-base {
-      font-weight: 700;
-      margin-top: 1rem;
-    }
-
-    .variantes h3 {
-      margin-bottom: 0.75rem;
-    }
-
-    .variante-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      padding: 0.85rem 0;
-      border-top: 1px solid var(--border);
-    }
-
-    .variante-row strong {
-      display: block;
-      margin-bottom: 0.2rem;
-    }
-
-    @media (max-width: 760px) {
-      .catalogo-header,
-      .producto-card {
-        display: block;
-      }
-
-      .selector-tienda {
-        margin-top: 1rem;
-        min-width: 100%;
-      }
-
-      .variantes {
-        margin-top: 1.25rem;
-      }
-
-      .variante-row {
-        align-items: stretch;
-        flex-direction: column;
-      }
-    }
-  `]
+  templateUrl: './home-cliente.component.html',
+  styleUrls: ['./home-cliente.component.css']
 })
 export class HomeClienteComponent implements OnInit {
-  tiendas: TiendaCatalogo[] = [];
   productos: ProductoCatalogo[] = [];
+  categorias: CategoriaCatalogo[] = [];
+  tiendas: TiendaCatalogo[] = [];
+
+  // Filtros activos
+  categoriaSeleccionadaId: number | null = null;
   tiendaSeleccionadaId: number | null = null;
-  cargandoTiendas = false;
-  cargandoProductos = false;
+  terminoBusqueda = '';
+
+  // Estados de carga
+  cargando = false;
   agregandoVarianteId: number | null = null;
+  varianteSeleccionadaPorProducto: { [productoId: number]: VarianteCatalogo } = {};
+
+  // Notificaciones
   mensajeExito = '';
   mensajeError = '';
 
   constructor(
-    private catalogoService: CatalogoService,
-    private carritoService: CarritoService
+    private readonly catalogoService: CatalogoService,
+    private readonly carritoService: CarritoService
   ) {}
 
   ngOnInit(): void {
-    this.cargarTiendas();
+    this.cargarFiltrosYCatalogoGeneral();
   }
 
-  cargarTiendas(): void {
-    this.cargandoTiendas = true;
+  cargarFiltrosYCatalogoGeneral(): void {
+    this.cargando = true;
     this.limpiarMensajes();
 
+    // 1. Cargar categorías disponibles
+    this.catalogoService.listarCategorias().subscribe({
+      next: (cats) => {
+        this.categorias = cats;
+      },
+      error: () => {}
+    });
+
+    // 2. Cargar tiendas disponibles
     this.catalogoService.listarTiendas().subscribe({
       next: (tiendas) => {
         this.tiendas = tiendas;
-        this.cargandoTiendas = false;
-        if (tiendas.length > 0) {
-          this.tiendaSeleccionadaId = tiendas[0].id;
-          this.cargarProductos();
+      },
+      error: () => {}
+    });
+
+    // 3. Cargar todos los productos en general al inicio
+    this.aplicarFiltros();
+  }
+
+  aplicarFiltros(): void {
+    this.cargando = true;
+    this.limpiarMensajes();
+
+    const filtros: { categoria?: number; tienda?: number; q?: string } = {};
+    if (this.categoriaSeleccionadaId) {
+      filtros.categoria = this.categoriaSeleccionadaId;
+    }
+    if (this.tiendaSeleccionadaId) {
+      filtros.tienda = this.tiendaSeleccionadaId;
+    }
+    if (this.terminoBusqueda.trim()) {
+      filtros.q = this.terminoBusqueda.trim();
+    }
+
+    this.catalogoService.listarTodosLosProductos(filtros).subscribe({
+      next: (prods) => {
+        this.productos = prods;
+        // Inicializar la variante por defecto de cada producto
+        for (const p of prods) {
+          if (p.variantes && p.variantes.length > 0) {
+            this.varianteSeleccionadaPorProducto[p.id] = p.variantes[0];
+          }
         }
+        this.cargando = false;
       },
       error: (error: HttpErrorResponse) => {
-        this.cargandoTiendas = false;
+        this.cargando = false;
         this.mensajeError = this.obtenerMensajeError(error);
       }
     });
   }
 
-  cargarProductos(): void {
-    this.productos = [];
-    this.limpiarMensajes();
-    if (this.tiendaSeleccionadaId === null) {
+  filtrarPorCategoria(catId: number | null): void {
+    this.categoriaSeleccionadaId = catId;
+    this.aplicarFiltros();
+  }
+
+  filtrarPorTienda(tiendaId: number | null): void {
+    this.tiendaSeleccionadaId = tiendaId;
+    this.aplicarFiltros();
+  }
+
+  seleccionarVariante(productoId: number, variante: VarianteCatalogo): void {
+    this.varianteSeleccionadaPorProducto[productoId] = variante;
+  }
+
+  obtenerVarianteActual(producto: ProductoCatalogo): VarianteCatalogo | null {
+    if (this.varianteSeleccionadaPorProducto[producto.id]) {
+      return this.varianteSeleccionadaPorProducto[producto.id];
+    }
+    return producto.variantes && producto.variantes.length > 0 ? producto.variantes[0] : null;
+  }
+
+  obtenerImagenProducto(producto: ProductoCatalogo): string {
+    if (producto.imagen_principal) {
+      return producto.imagen_principal;
+    }
+    if (producto.imagenes && producto.imagenes.length > 0) {
+      const first = producto.imagenes[0];
+      if (typeof first === 'object' && first.url) {
+        return first.url;
+      }
+      return String(first);
+    }
+    return 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80';
+  }
+
+  agregarAlCarrito(producto: ProductoCatalogo): void {
+    const variante = this.obtenerVarianteActual(producto);
+    if (!variante) {
+      this.mensajeError = 'Este producto no tiene variantes disponibles.';
       return;
     }
 
-    this.cargandoProductos = true;
-    this.catalogoService.listarProductos(this.tiendaSeleccionadaId).subscribe({
-      next: (productos) => {
-        this.productos = productos;
-        this.cargandoProductos = false;
-      },
-      error: (error: HttpErrorResponse) => {
-        this.cargandoProductos = false;
-        this.mensajeError = this.obtenerMensajeError(error);
-      }
-    });
-  }
+    if (variante.stock <= 0) {
+      this.mensajeError = 'La variante seleccionada no cuenta con stock disponible.';
+      return;
+    }
 
-  agregarAlCarrito(producto: ProductoCatalogo, variante: VarianteCatalogo): void {
-    if (this.tiendaSeleccionadaId === null) {
+    const tiendaId = producto.tienda_id;
+    if (!tiendaId) {
+      this.mensajeError = 'No se pudo identificar la tienda del producto.';
       return;
     }
 
     this.limpiarMensajes();
     this.agregandoVarianteId = variante.id;
+
     this.carritoService.agregarItem({
-      tienda_id: this.tiendaSeleccionadaId,
+      tienda_id: tiendaId,
       variante_id: variante.id
     }).subscribe({
       next: () => {
         this.agregandoVarianteId = null;
-        this.mensajeExito = `${producto.nombre} - ${variante.nombre_variante} fue agregado al carrito.`;
+        this.mensajeExito = `¡Agregado al carrito! ${producto.nombre} (${variante.nombre_variante || variante.nombre})`;
+        setTimeout(() => this.limpiarMensajes(), 4000);
       },
       error: (error: HttpErrorResponse) => {
         this.agregandoVarianteId = null;
         this.mensajeError = this.obtenerMensajeError(error);
       }
     });
+  }
+
+  limpiarFiltros(): void {
+    this.categoriaSeleccionadaId = null;
+    this.tiendaSeleccionadaId = null;
+    this.terminoBusqueda = '';
+    this.aplicarFiltros();
   }
 
   private limpiarMensajes(): void {
@@ -333,23 +188,15 @@ export class HomeClienteComponent implements OnInit {
   }
 
   private obtenerMensajeError(error: HttpErrorResponse): string {
-    const respuesta = error.error;
-    if (typeof respuesta === 'string' && respuesta) {
-      return respuesta;
+    const resp = error.error;
+    if (typeof resp === 'string' && resp) return resp;
+    if (resp?.detail) return resp.detail;
+    if (resp && typeof resp === 'object') {
+      const key = Object.keys(resp)[0];
+      const val = resp[key];
+      if (Array.isArray(val) && val.length) return String(val[0]);
+      if (val) return String(val);
     }
-    if (respuesta?.detail) {
-      return respuesta.detail;
-    }
-    if (respuesta && typeof respuesta === 'object') {
-      const primerCampo = Object.keys(respuesta)[0];
-      const detalle = respuesta[primerCampo];
-      if (Array.isArray(detalle) && detalle.length > 0) {
-        return String(detalle[0]);
-      }
-      if (detalle) {
-        return String(detalle);
-      }
-    }
-    return 'No fue posible completar la operación.';
+    return 'Ocurrió un error al procesar la solicitud.';
   }
 }
