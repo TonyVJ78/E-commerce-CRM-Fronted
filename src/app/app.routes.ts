@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, empresaGuard, adminGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, empresaGuard, adminGuard, clienteGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -31,7 +31,7 @@ export const routes: Routes = [
   },
   {
     path: 'inicio',
-    canActivate: [authGuard],
+    canActivate: [clienteGuard],
     loadComponent: () =>
       import('./features/home/home-cliente.component').then(m => m.HomeClienteComponent)
   },
@@ -64,6 +64,12 @@ export const routes: Routes = [
     canActivate: [empresaGuard],
     loadComponent: () =>
        import('./features/tienda/create-tienda/create-tienda.component').then(m => m.CreateTiendaComponent)
+  },
+  {
+    path: 'tiendas/productos',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/create-tienda/gestion-productos/gestion-productos.component').then(m => m.GestionProductosComponent)
   },
   {
     path: 'tiendas/:tiendaId/productos/nuevo',
