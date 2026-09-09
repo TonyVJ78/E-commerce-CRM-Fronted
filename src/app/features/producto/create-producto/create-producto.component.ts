@@ -36,6 +36,9 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
   private previewObjectUrls: string[] = [];
   private routeSubscription?: Subscription;
 
+  /** Campos de la variante "única"; solo aplican cuando el producto NO tiene opciones. */
+  private readonly simpleVariantControls = ['codigo', 'precio', 'precio_oferta', 'stock', 'stock_minimo'];
+
   readonly acceptedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
   readonly maxImageSize = 5 * 1024 * 1024;
 
@@ -149,10 +152,32 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
   }
 
   onOptionsChange(): void {
-    if (this.hasOptions && this.variants.length === 0) {
-      this.addVariant();
+    if (this.hasOptions) {
+      // Los campos de la variante única quedan ocultos: hay que sacarlos de la
+      // validación o el formulario nunca será válido (codigo/precio vacíos).
+      this.setSimpleVariantEnabled(false);
+      if (this.variants.length === 0) {
+        this.addVariant();
+      }
+    } else {
+      // Volvemos a producto único: reactivamos sus campos y descartamos las
+      // variantes a medio llenar (sus validadores required bloquearían el submit).
+      this.setSimpleVariantEnabled(true);
+      this.variants.clear();
     }
     this.duplicateSku = false;
+  }
+
+  private setSimpleVariantEnabled(enabled: boolean): void {
+    for (const name of this.simpleVariantControls) {
+      const control = this.productForm.get(name);
+      if (!control) continue;
+      if (enabled) {
+        control.enable({ emitEvent: false });
+      } else {
+        control.disable({ emitEvent: false });
+      }
+    }
   }
 
   onFileSelected(event: Event): void {
@@ -283,6 +308,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     this.selectedFiles = [];
     this.previewUrls = [];
     this.variants.clear();
+    this.setSimpleVariantEnabled(true);
     this.productForm.reset({
       nombre: '', descripcion: '', categoria_id: null, etiquetas: '', activo: true,
       tieneOpciones: false, codigo: '', precio: null, precio_oferta: null,
