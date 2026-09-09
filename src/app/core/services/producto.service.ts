@@ -51,15 +51,31 @@ export class ProductoService {
     return this.http.get<Categoria[]>(`${this.apiUrl}/${tiendaId}/categorias/`);
   }
 
-  listar(tiendaId: number): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/${tiendaId}/productos/`);
+  listar(tiendaId?: number): Observable<any[]> {
+    if (tiendaId !== undefined) {
+      return this.http.get<any[]>(`${this.apiUrl}/${tiendaId}/productos/`);
+    }
+    return this.http.get<any[]>(`${this.apiUrl}/productos/`);
   }
 
-  obtener(tiendaId: number, productoId: number): Observable<Producto> {
-    return this.http.get<Producto>(`${this.apiUrl}/${tiendaId}/productos/${productoId}/`);
+  obtener(idOrTiendaId: number, productoId?: number): Observable<any> {
+    if (productoId !== undefined) {
+      return this.http.get<any>(`${this.apiUrl}/${idOrTiendaId}/productos/${productoId}/`);
+    }
+    return this.http.get<any>(`${this.apiUrl}/productos/${idOrTiendaId}/`);
   }
 
   crear(tiendaId: number, data: FormData): Observable<Producto> {
     return this.http.post<Producto>(`${this.apiUrl}/${tiendaId}/productos/`, data);
+  }
+
+  // CU09: Editar / Actualizar producto (PATCH)
+  actualizar(id: number, data: Partial<any>): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/productos/${id}/`, data);
+  }
+
+  // CU09: Eliminar producto (DELETE -> Soft delete en backend)
+  eliminar(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/productos/${id}/`);
   }
 }
