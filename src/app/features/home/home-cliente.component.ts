@@ -74,9 +74,16 @@ export class HomeClienteComponent implements OnInit {
     this.cargando = true;
     this.limpiarMensajes();
 
-    const filtros: { categoria?: number; tienda?: number; q?: string } = {};
+    const filtros: { categoria?: number; categoriaNombre?: string; tienda?: number; q?: string } = {};
     if (this.categoriaSeleccionadaId) {
-      filtros.categoria = this.categoriaSeleccionadaId;
+      const cat = this.categorias.find(c => c.id === this.categoriaSeleccionadaId);
+      // Con una tienda elegida el id es exacto; sin ella se filtra por nombre
+      // para juntar esa categoría en todas las tiendas.
+      if (this.tiendaSeleccionadaId || !cat) {
+        filtros.categoria = this.categoriaSeleccionadaId;
+      } else {
+        filtros.categoriaNombre = cat.nombre;
+      }
     }
     if (this.tiendaSeleccionadaId) {
       filtros.tienda = this.tiendaSeleccionadaId;

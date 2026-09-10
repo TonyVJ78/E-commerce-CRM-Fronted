@@ -29,9 +29,15 @@ export class CatalogoService {
     return this.http.get<CategoriaCatalogo[]>(`${this.apiUrl}/categorias/`, { params });
   }
 
-  listarTodosLosProductos(filtros?: { categoria?: number; tienda?: number; q?: string }): Observable<ProductoCatalogo[]> {
+  listarTodosLosProductos(
+    filtros?: { categoria?: number; categoriaNombre?: string; tienda?: number; q?: string }
+  ): Observable<ProductoCatalogo[]> {
     let params = new HttpParams();
-    if (filtros?.categoria) {
+    // Cada tienda tiene su propia fila de "Accesorios", así que en el catálogo
+    // general el filtro va por nombre; el id sólo sirve dentro de una tienda.
+    if (filtros?.categoriaNombre) {
+      params = params.set('categoria_nombre', filtros.categoriaNombre);
+    } else if (filtros?.categoria) {
       params = params.set('categoria', filtros.categoria.toString());
     }
     if (filtros?.tienda) {
