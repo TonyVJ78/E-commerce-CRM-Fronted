@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import {
   ProductoCatalogo,
   TiendaCatalogo,
@@ -18,7 +19,7 @@ import { CarritoService } from '../../core/services/carrito.service';
   templateUrl: './home-cliente.component.html',
   styleUrls: ['./home-cliente.component.css']
 })
-export class HomeClienteComponent implements OnInit {
+export class HomeClienteComponent implements OnInit, OnDestroy {
   productos: ProductoCatalogo[] = [];
   categorias: CategoriaCatalogo[] = [];
   tiendas: TiendaCatalogo[] = [];
@@ -37,6 +38,8 @@ export class HomeClienteComponent implements OnInit {
   mensajeExito = '';
   mensajeError = '';
 
+  private readonly subs = new Subscription();
+
   constructor(
     private readonly catalogoService: CatalogoService,
     private readonly carritoService: CarritoService
@@ -44,6 +47,37 @@ export class HomeClienteComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarFiltrosYCatalogoGeneral();
+
+    // Escuchar cuando el usuario hace checkout en el carrito
+    this.subs.add(
+      this.carritoService.checkoutCompleted$.subscribe((res) => {
+        // 1. Decremento optimista inmediato en la interfaz
+        if (res?.items_comprados && res.items_comprados.length > 0) {
+          for (const item of res.items_comprados) {
+            for (const prod of this.productos) {
+              if (prod.variantes) {
+                for (const v of prod.variantes) {
+                  if (v.id === item.variante_id) {
+                    v.stock = Math.max(0, v.stock - item.cantidad);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 2. Banner de confirmación en la vista
+        this.mensajeExito = '¡Compra realizada con éxito! El inventario ha sido actualizado en tiempo real.';
+        setTimeout(() => this.limpiarMensajes(), 5000);
+
+        // 3. Re-sincronizar catálogo con el backend
+        this.recargarCatalogoSilencioso();
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   cargarFiltrosYCatalogoGeneral(): void {
@@ -70,15 +104,15 @@ export class HomeClienteComponent implements OnInit {
     this.aplicarFiltros();
   }
 
-  aplicarFiltros(): void {
-    this.cargando = true;
-    this.limpiarMensajes();
-
+  /**
+   * Arma los filtros del catálogo general. Cada tienda tiene su propia fila de
+   * "Accesorios", así que sin una tienda elegida se filtra por nombre para
+   * juntar esa categoría en todas las tiendas; el id sólo sirve dentro de una.
+   */
+  private construirFiltros(): { categoria?: number; categoriaNombre?: string; tienda?: number; q?: string } {
     const filtros: { categoria?: number; categoriaNombre?: string; tienda?: number; q?: string } = {};
     if (this.categoriaSeleccionadaId) {
       const cat = this.categorias.find(c => c.id === this.categoriaSeleccionadaId);
-      // Con una tienda elegida el id es exacto; sin ella se filtra por nombre
-      // para juntar esa categoría en todas las tiendas.
       if (this.tiendaSeleccionadaId || !cat) {
         filtros.categoria = this.categoriaSeleccionadaId;
       } else {
@@ -91,14 +125,24 @@ export class HomeClienteComponent implements OnInit {
     if (this.terminoBusqueda.trim()) {
       filtros.q = this.terminoBusqueda.trim();
     }
+    return filtros;
+  }
+
+  aplicarFiltros(): void {
+    this.cargando = true;
+    this.limpiarMensajes();
+
+    const filtros = this.construirFiltros();
 
     this.catalogoService.listarTodosLosProductos(filtros).subscribe({
       next: (prods) => {
         this.productos = prods;
-        // Inicializar la variante por defecto de cada producto
+        // Preservar la variante seleccionada si ya existía
         for (const p of prods) {
           if (p.variantes && p.variantes.length > 0) {
-            this.varianteSeleccionadaPorProducto[p.id] = p.variantes[0];
+            const currentSelected = this.varianteSeleccionadaPorProducto[p.id];
+            const updatedMatch = currentSelected ? p.variantes.find(v => v.id === currentSelected.id) : null;
+            this.varianteSeleccionadaPorProducto[p.id] = updatedMatch || p.variantes[0];
           }
         }
         this.cargando = false;
@@ -107,6 +151,24 @@ export class HomeClienteComponent implements OnInit {
         this.cargando = false;
         this.mensajeError = this.obtenerMensajeError(error);
       }
+    });
+  }
+
+  recargarCatalogoSilencioso(): void {
+    const filtros = this.construirFiltros();
+
+    this.catalogoService.listarTodosLosProductos(filtros).subscribe({
+      next: (prods) => {
+        this.productos = prods;
+        for (const p of prods) {
+          if (p.variantes && p.variantes.length > 0) {
+            const currentSelected = this.varianteSeleccionadaPorProducto[p.id];
+            const updatedMatch = currentSelected ? p.variantes.find(v => v.id === currentSelected.id) : null;
+            this.varianteSeleccionadaPorProducto[p.id] = updatedMatch || p.variantes[0];
+          }
+        }
+      },
+      error: () => {}
     });
   }
 

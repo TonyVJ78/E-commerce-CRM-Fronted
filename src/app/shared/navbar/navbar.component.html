@@ -6,9 +6,9 @@
     </a>
 
     <div class="navbar-actions-mobile">
-      <!-- Botón de carrito móvil (solo para rol cliente) -->
+      <!-- Botón de carrito móvil -->
       <button
-        *ngIf="authService.isAuthenticated && (authService.currentUser$ | async)?.rol === 'cliente'"
+        *ngIf="authService.isAuthenticated"
         class="cart-trigger-btn"
         (click)="toggleCart()"
         aria-label="Abrir carrito"
@@ -26,8 +26,10 @@
 
     <div class="navbar-menu" [class.open]="menuOpen">
       <ng-container *ngIf="authService.isAuthenticated; else guestLinks">
+        <!-- Catálogo accesible para todos los usuarios autenticados -->
+        <a routerLink="/inicio" routerLinkActive="active" (click)="menuOpen = false">Catálogo</a>
+
         <!-- Enlaces según rol -->
-        <a *ngIf="(authService.currentUser$ | async)?.rol === 'cliente'" routerLink="/inicio" routerLinkActive="active" (click)="menuOpen = false">Catálogo</a>
         <a *ngIf="(authService.currentUser$ | async)?.rol === 'administrador'" routerLink="/dashboard" routerLinkActive="active" (click)="menuOpen = false">Dashboard</a>
         <a *ngIf="(authService.currentUser$ | async)?.rol === 'administrador'" routerLink="/auditoria" routerLinkActive="active" (click)="menuOpen = false">Bitácora</a>
         <a *ngIf="(authService.currentUser$ | async)?.rol === 'administrador'" routerLink="/accesos" routerLinkActive="active" (click)="menuOpen = false">Accesos</a>
@@ -37,9 +39,9 @@
         
         <a routerLink="/perfil" routerLinkActive="active" (click)="menuOpen = false">Mi Perfil</a>
 
-        <!-- Botón de carrito desktop (solo para rol cliente) -->
+        <!-- Botón de carrito desktop -->
         <button
-          *ngIf="(authService.currentUser$ | async)?.rol === 'cliente'"
+          *ngIf="authService.isAuthenticated"
           class="cart-trigger-btn desktop-only"
           (click)="toggleCart()"
           title="Ver Carrito de Compras"
@@ -65,6 +67,9 @@
     </div>
   </div>
 </nav>
+
+<div class="navbar-backdrop" *ngIf="menuOpen" (click)="menuOpen = false"></div>
+
 
 <!-- ========================================================================= -->
 <!-- SLIDE-OVER DRAWER DEL CARRITO DE COMPRAS -->
@@ -140,6 +145,83 @@
           </div>
         </div>
       </div>
+
+      <!-- Totales y Checkout: dentro del mismo contenedor con scroll que el listado, para no tener doble scroll -->
+      <div class="cart-totals-section" *ngIf="cartData.total_items > 0 && !checkoutSuccess">
+        <div class="total-row">
+          <span>Artículos:</span>
+          <strong>{{ cartData.total_items }}</strong>
+        </div>
+        <div class="total-row grand-total">
+          <span>Total a pagar:</span>
+          <span class="grand-total-amount">Bs {{ cartData.total_global }}</span>
+        </div>
+
+        <div class="checkout-error-alert" *ngIf="checkoutError" style="margin-bottom: 0.75rem; padding: 0.6rem 0.8rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 0.82rem;">
+          ⚠️ {{ checkoutError }}
+        </div>
+
+        <!-- Selector de método de pago (CU-19) -->
+        <div class="payment-method-picker">
+          <button
+            type="button"
+            class="payment-method-option"
+            [class.selected]="metodoPago === 'efectivo'"
+            (click)="seleccionarMetodoPago('efectivo')"
+          >
+            <span>💵</span> Efectivo / QR contra entrega
+          </button>
+          <button
+            type="button"
+            class="payment-method-option"
+            [class.selected]="metodoPago === 'stripe'"
+            (click)="seleccionarMetodoPago('stripe')"
+          >
+            <span>💳</span> Tarjeta (Stripe)
+          </button>
+        </div>
+
+        <!-- Formulario de tarjeta de Stripe, embebido debajo al seleccionar la opción.
+             Se usa [hidden] en vez de *ngIf: así el nodo donde Stripe monta su iframe
+             no se destruye al pivotear a Efectivo/QR y volver, evitando que el
+             formulario quede vacío/roto en la segunda selección. -->
+        <div class="stripe-payment-box" [hidden]="metodoPago !== 'stripe'">
+          <div class="stripe-loading" *ngIf="cargandoStripe">
+            <div class="spinner"></div>
+            <span>Cargando formulario seguro de Stripe...</span>
+          </div>
+
+          <div id="stripe-payment-element" [hidden]="cargandoStripe"></div>
+
+          <div class="checkout-error-alert" *ngIf="stripeError" style="margin: 0.6rem 0; padding: 0.6rem 0.8rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 0.82rem;">
+            ⚠️ {{ stripeError }}
+          </div>
+
+          <div class="cart-footer-buttons">
+            <button class="btn btn-outline btn-sm btn-clear" [disabled]="pagandoStripe" (click)="vaciar()">
+              Vaciar
+            </button>
+            <button
+              class="btn btn-primary btn-checkout"
+              [disabled]="pagandoStripe || cargandoStripe"
+              (click)="pagarConStripe()"
+            >
+              <span *ngIf="pagandoStripe">Procesando pago...</span>
+              <span *ngIf="!pagandoStripe">Pagar con tarjeta →</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="cart-footer-buttons" *ngIf="metodoPago === 'efectivo'">
+          <button class="btn btn-outline btn-sm btn-clear" [disabled]="isCheckingOut" (click)="vaciar()">
+            Vaciar
+          </button>
+          <button class="btn btn-primary btn-checkout" [disabled]="isCheckingOut" (click)="procederCheckout()">
+            <span *ngIf="isCheckingOut">Procesando compra...</span>
+            <span *ngIf="!isCheckingOut">Confirmar y Pagar (Checkout) →</span>
+          </button>
+        </div>
+      </div>
     </ng-container>
 
     <ng-template #cargandoCart>
@@ -148,28 +230,5 @@
         <p>Cargando tu carrito...</p>
       </div>
     </ng-template>
-  </div>
-
-  <!-- Footer del Carrito con Totales y Checkout -->
-  <div class="cart-drawer-footer" *ngIf="(carritoService.cartData$ | async) as cartData">
-    <div class="cart-totals-section" *ngIf="cartData.total_items > 0 && !checkoutSuccess">
-      <div class="total-row">
-        <span>Artículos:</span>
-        <strong>{{ cartData.total_items }}</strong>
-      </div>
-      <div class="total-row grand-total">
-        <span>Total a pagar:</span>
-        <span class="grand-total-amount">Bs {{ cartData.total_global }}</span>
-      </div>
-
-      <div class="cart-footer-buttons">
-        <button class="btn btn-outline btn-sm btn-clear" (click)="vaciar()">
-          Vaciar
-        </button>
-        <button class="btn btn-primary btn-checkout" (click)="procederCheckout()">
-          Confirmar y Pagar (Checkout) →
-        </button>
-      </div>
-    </div>
   </div>
 </aside>

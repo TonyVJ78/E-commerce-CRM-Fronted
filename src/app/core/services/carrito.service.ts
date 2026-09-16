@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AgregarItemCarritoRequest,
@@ -11,6 +11,27 @@ import {
   CarritoDetalle,
   ItemCarritoDetalle,
 } from '../models/carrito.model';
+
+export interface ItemCompradoInfo {
+  variante_id: number;
+  producto_id: number;
+  cantidad: number;
+}
+
+export interface CheckoutResponse {
+  mensaje: string;
+  pedidos: number[];
+  items_comprados?: ItemCompradoInfo[];
+  metodo_pago?: string;
+}
+
+export interface IntentoPagoStripe {
+  client_secret: string;
+  payment_intent_id: string;
+  publishable_key: string;
+  monto_bs: string;
+  monto_usd: string;
+}
 
 export type {
   AgregarItemCarritoRequest,
@@ -31,6 +52,9 @@ export class CarritoService {
 
   private readonly cartDataSubject = new BehaviorSubject<CarritoResponse | null>(null);
   public readonly cartData$ = this.cartDataSubject.asObservable();
+
+  private readonly checkoutCompletedSubject = new Subject<CheckoutResponse>();
+  public readonly checkoutCompleted$ = this.checkoutCompletedSubject.asObservable();
 
   constructor(private readonly http: HttpClient) {
     // Si hay token de usuario, intentar precargar conteo del carrito
@@ -87,4 +111,23 @@ export class CarritoService {
       })
     );
   }
+
+  crearIntentoPagoStripe(): Observable<IntentoPagoStripe> {
+    return this.http.post<IntentoPagoStripe>(`${this.apiUrl}/pago-intento/`, {});
+  }
+
+  checkout(metodoPago: string = 'efectivo', paymentIntentId?: string): Observable<CheckoutResponse> {
+    const body: { metodo_pago: string; payment_intent_id?: string } = { metodo_pago: metodoPago };
+    if (paymentIntentId) {
+      body.payment_intent_id = paymentIntentId;
+    }
+    return this.http.post<CheckoutResponse>(`${this.apiUrl}/checkout/`, body).pipe(
+      tap((res) => {
+        this.cartCountSubject.next(0);
+        this.cartDataSubject.next(null);
+        this.checkoutCompletedSubject.next(res);
+      })
+    );
+  }
 }
+
