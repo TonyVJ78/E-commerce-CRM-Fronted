@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import {
   ProductoCatalogo,
@@ -15,7 +16,7 @@ import { CarritoService } from '../../core/services/carrito.service';
 @Component({
   selector: 'app-home-cliente',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './home-cliente.component.html',
   styleUrls: ['./home-cliente.component.css']
 })

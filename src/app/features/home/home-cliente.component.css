@@ -247,6 +247,7 @@
 }
 
 .card-media {
+  display: block;
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -605,3 +606,11 @@
   }
 }
 
+.product-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-title a:hover {
+  color: var(--primary);
+}

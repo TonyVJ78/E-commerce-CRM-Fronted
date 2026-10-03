@@ -7,3 +7,4 @@ export * from './catalogo.model';
 export * from './accesos.model';
 export * from './auditoria.model';
 export * from './pedido.model';
+export * from './chatbot.model';

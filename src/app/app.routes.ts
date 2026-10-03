@@ -36,6 +36,13 @@ export const routes: Routes = [
       import('./features/home/home-cliente.component').then(m => m.HomeClienteComponent)
   },
   {
+    // Ficha de producto: destino de las recomendaciones del chatbot.
+    path: 'producto/:id',
+    canActivate: [clienteGuard],
+    loadComponent: () =>
+      import('./features/producto/detalle-producto/detalle-producto.component').then(m => m.DetalleProductoComponent)
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () =>

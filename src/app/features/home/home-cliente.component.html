@@ -109,7 +109,7 @@
     <section class="products-grid" *ngIf="!cargando && productos.length > 0">
       <article class="product-card" *ngFor="let producto of productos">
         <!-- Imagen y Badges -->
-        <div class="card-media">
+        <a class="card-media" [routerLink]="['/producto', producto.id]" [attr.aria-label]="'Ver ' + producto.nombre">
           <img
             [src]="obtenerImagenProducto(producto)"
             [alt]="producto.nombre"
@@ -122,11 +122,13 @@
           <span class="badge-category" *ngIf="producto.categoria_nombre">
             {{ producto.categoria_nombre }}
           </span>
-        </div>
+        </a>
 
         <!-- Contenido de la Tarjeta -->
         <div class="card-body">
-          <h3 class="product-title" [title]="producto.nombre">{{ producto.nombre }}</h3>
+          <h3 class="product-title" [title]="producto.nombre">
+            <a [routerLink]="['/producto', producto.id]">{{ producto.nombre }}</a>
+          </h3>
           <p class="product-desc" *ngIf="producto.descripcion">{{ producto.descripcion }}</p>
 
           <!-- Selector de Variantes (si tiene más de una) -->

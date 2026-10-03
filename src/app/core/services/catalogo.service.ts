@@ -49,6 +49,10 @@ export class CatalogoService {
     return this.http.get<ProductoCatalogo[]>(`${this.apiUrl}/productos/`, { params });
   }
 
+  obtenerProducto(productoId: number): Observable<ProductoCatalogo> {
+    return this.http.get<ProductoCatalogo>(`${this.apiUrl}/productos/${productoId}/`);
+  }
+
   listarProductos(tiendaId: number): Observable<ProductoCatalogo[]> {
     return this.http.get<ProductoCatalogo[]>(
       `${this.apiUrl}/tiendas/${tiendaId}/productos/`
