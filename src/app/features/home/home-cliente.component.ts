@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   CatalogoService,
@@ -9,11 +9,14 @@ import {
   VarianteCatalogo
 } from '../../core/services/catalogo.service';
 import { CarritoService } from '../../core/services/carrito.service';
+import { ProductoRecomendado } from '../../core/models/recomendacion.model';
+import { RecomendacionService } from '../../core/services/recomendacion.service';
+import { RecomendacionesComponent } from './recomendaciones/recomendaciones.component';
 
 @Component({
   selector: 'app-home-cliente',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RecomendacionesComponent],
   template: `
     <div class="page-container catalogo-page">
       <section class="catalogo-header">
@@ -43,6 +46,32 @@ import { CarritoService } from '../../core/services/carrito.service';
       <p class="alert alert-error" role="alert" *ngIf="mensajeError">
         {{ mensajeError }}
       </p>
+
+      <section *ngIf="tiendaSeleccionadaId" aria-label="Recomendaciones de la tienda">
+        <form class="busqueda-recomendaciones" (ngSubmit)="buscarParaRecomendaciones()">
+          <label for="buscar-recomendaciones">Buscar en esta tienda</label>
+          <input id="buscar-recomendaciones" name="buscarRecomendaciones"
+                 [(ngModel)]="terminoRecomendaciones" maxlength="150" />
+          <button type="submit">Buscar</button>
+        </form>
+        <app-recomendaciones
+          [tiendaId]="tiendaSeleccionadaId"
+          (productoSeleccionado)="abrirRecomendacion($event)"
+        />
+      </section>
+
+      <section class="detalle-recomendado" *ngIf="productoRecomendadoEnDetalle as recomendado"
+               aria-label="Detalle del producto recomendado">
+        <button type="button" (click)="cerrarRecomendacion()">Cerrar detalle</button>
+        <h2>{{ recomendado.nombre }}</h2>
+        <p>{{ recomendado.descripcion }}</p>
+        <p>{{ recomendado.categoria_nombre }} · Bs {{ recomendado.precio_base }}</p>
+        <ul>
+          <li *ngFor="let variante of recomendado.variantes">
+            {{ variante.nombre }} · Bs {{ variante.precio }} · {{ variante.stock }} disponibles
+          </li>
+        </ul>
+      </section>
 
       <div class="loading-state" *ngIf="cargandoTiendas || cargandoProductos">
         Cargando catálogo...
@@ -97,6 +126,37 @@ import { CarritoService } from '../../core/services/carrito.service';
     </div>
   `,
   styles: [`
+    .busqueda-recomendaciones {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin: 0 0 1rem;
+    }
+
+    .busqueda-recomendaciones input {
+      flex: 1;
+      padding: .65rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    .busqueda-recomendaciones button,
+    .detalle-recomendado button {
+      padding: .65rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      cursor: pointer;
+    }
+
+    .detalle-recomendado {
+      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+    }
+
     .catalogo-page {
       padding-top: 2rem;
       padding-bottom: 3rem;
@@ -247,6 +307,7 @@ import { CarritoService } from '../../core/services/carrito.service';
   `]
 })
 export class HomeClienteComponent implements OnInit {
+  @ViewChild(RecomendacionesComponent) recomendaciones?: RecomendacionesComponent;
   tiendas: TiendaCatalogo[] = [];
   productos: ProductoCatalogo[] = [];
   tiendaSeleccionadaId: number | null = null;
@@ -255,10 +316,13 @@ export class HomeClienteComponent implements OnInit {
   agregandoVarianteId: number | null = null;
   mensajeExito = '';
   mensajeError = '';
+  terminoRecomendaciones = '';
+  productoRecomendadoEnDetalle: ProductoRecomendado | null = null;
 
   constructor(
     private catalogoService: CatalogoService,
-    private carritoService: CarritoService
+    private carritoService: CarritoService,
+    private recomendacionService: RecomendacionService
   ) {}
 
   ngOnInit(): void {
@@ -287,6 +351,8 @@ export class HomeClienteComponent implements OnInit {
 
   cargarProductos(): void {
     this.productos = [];
+    this.productoRecomendadoEnDetalle = null;
+    this.terminoRecomendaciones = '';
     this.limpiarMensajes();
     if (this.tiendaSeleccionadaId === null) {
       return;
@@ -303,6 +369,34 @@ export class HomeClienteComponent implements OnInit {
         this.mensajeError = this.obtenerMensajeError(error);
       }
     });
+  }
+
+  buscarParaRecomendaciones(): void {
+    const term = this.terminoRecomendaciones.trim();
+    const tiendaId = this.tiendaSeleccionadaId;
+    if (!term || tiendaId === null) return;
+    this.recomendacionService.registrarInteraccion({
+      tienda_id: tiendaId,
+      tipo_interaccion: 'SEARCH',
+      termino_busqueda: term
+    }).subscribe({
+      next: () => this.recomendaciones?.cargar(),
+      error: () => this.recomendaciones?.cargar()
+    });
+  }
+
+  abrirRecomendacion(producto: ProductoRecomendado): void {
+    if (producto.tienda_id !== this.tiendaSeleccionadaId) return;
+    this.productoRecomendadoEnDetalle = producto;
+    this.recomendacionService.registrarInteraccion({
+      tienda_id: producto.tienda_id,
+      producto_id: producto.id,
+      tipo_interaccion: 'VIEW'
+    }).subscribe({error: () => {}});
+  }
+
+  cerrarRecomendacion(): void {
+    this.productoRecomendadoEnDetalle = null;
   }
 
   agregarAlCarrito(producto: ProductoCatalogo, variante: VarianteCatalogo): void {
