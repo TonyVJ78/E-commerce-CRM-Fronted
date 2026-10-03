@@ -33,6 +33,16 @@ export class NavbarComponent implements OnInit {
         this.carritoService.cargarCarritoSilencioso();
       }
     });
+
+    // El PaymentIntent se crea por el total del carrito en ese momento: si el
+    // cliente cambia cantidades o quita productos, hay que crear otro, porque
+    // si no pagaría un monto distinto al del carrito y el checkout lo rechazaría.
+    this.carritoService.cartData$.subscribe(data => {
+      this.firmaCarrito = data ? `${data.total_items}|${data.total_global}` : '';
+      if (this.cartOpen && this.stripePreload && this.firmaCarrito !== this.firmaStripe) {
+        this.refrescarPagoStripe(data?.total_items ?? 0);
+      }
+    });
   }
 
   toggleMenu(): void {
@@ -95,6 +105,9 @@ export class NavbarComponent implements OnInit {
   private paymentElement: StripePaymentElement | null = null;
   private stripeMontado = false;
   private stripePreload: Promise<{ stripe: Stripe; clientSecret: string }> | null = null;
+  private firmaCarrito = '';
+  /** Firma (ítems|total) del carrito con la que se creó el PaymentIntent vigente. */
+  private firmaStripe = '';
 
   eliminar(itemId: number): void {
     this.carritoService.eliminarItem(itemId).subscribe();
@@ -129,6 +142,7 @@ export class NavbarComponent implements OnInit {
     });
 
     this.stripePreload = preload;
+    this.firmaStripe = this.firmaCarrito;
     preload.catch(() => {}); // evita "unhandled rejection"; el error real se maneja al mostrar el formulario
     return preload;
   }
@@ -154,6 +168,20 @@ export class NavbarComponent implements OnInit {
       });
   }
 
+  /** Descarta el PaymentIntent vigente (el carrito cambió) y crea uno nuevo por el total actual,
+   * conservando el método de pago elegido. Si se está cobrando, no se toca nada. */
+  private refrescarPagoStripe(totalItems: number): void {
+    if (this.pagandoStripe) return;
+    const metodo = this.metodoPago;
+    this.resetPagoStripe();
+    if (totalItems <= 0) return;
+    this.precargarStripe();
+    if (metodo === 'stripe') {
+      this.metodoPago = 'stripe';
+      this.iniciarPagoStripe();
+    }
+  }
+
   /** Limpia el estado de Stripe. Desmonta el PaymentElement explícitamente porque el
    * nodo `#stripe-payment-element` ya no se destruye al cerrar el carrito (se usa
    * [hidden] para poder pivotear Efectivo/Stripe sin perder el formulario montado);
@@ -169,6 +197,7 @@ export class NavbarComponent implements OnInit {
     this.stripeError = null;
     this.pagandoStripe = false;
     this.stripePreload = null;
+    this.firmaStripe = '';
   }
 
   async pagarConStripe(): Promise<void> {
