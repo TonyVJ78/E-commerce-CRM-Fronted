@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Subscription, switchMap } from 'rxjs';
+import { Subscription, catchError, of, switchMap } from 'rxjs';
 import { ProductoCatalogo, VarianteCatalogo } from '../../../core/models';
 import { CarritoService } from '../../../core/services/carrito.service';
 import { CatalogoService } from '../../../core/services/catalogo.service';
@@ -43,28 +43,26 @@ export class DetalleProductoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // El chat puede abrir otro producto estando ya en esta ruta: se escucha el
-    // parámetro en vez de leerlo una sola vez.
+    // parámetro en vez de leerlo una sola vez. El error se atrapa dentro del
+    // switchMap; si llegara al subscribe, cortaría la escucha del parámetro.
     this.subs.add(
       this.route.paramMap.pipe(
         switchMap(params => {
           this.cargando = true;
-          this.noEncontrado = false;
           this.limpiarMensajes();
-          return this.catalogoService.obtenerProducto(Number(params.get('id')));
+          return this.catalogoService.obtenerProducto(Number(params.get('id'))).pipe(
+            catchError(() => of(null))
+          );
         })
-      ).subscribe({
-        next: producto => {
-          this.producto = producto;
-          this.variante = producto.variantes.find(v => v.stock > 0) ?? producto.variantes[0] ?? null;
-          this.imagenActiva = this.imagenes[0];
-          this.cargando = false;
-          window.scrollTo({ top: 0 });
-        },
-        error: () => {
-          this.producto = null;
-          this.noEncontrado = true;
-          this.cargando = false;
-        }
+      ).subscribe(producto => {
+        this.producto = producto;
+        this.noEncontrado = !producto;
+        this.variante = producto
+          ? producto.variantes.find(v => v.stock > 0) ?? producto.variantes[0] ?? null
+          : null;
+        this.imagenActiva = this.imagenes[0];
+        this.cargando = false;
+        window.scrollTo({ top: 0 });
       })
     );
   }

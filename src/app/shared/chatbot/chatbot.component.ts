@@ -72,7 +72,11 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
   }
 
   alternar(): void {
-    this.abierto ? this.cerrar() : this.abrir();
+    if (this.abierto) {
+      this.cerrar();
+    } else {
+      this.abrir();
+    }
   }
 
   abrir(): void {
