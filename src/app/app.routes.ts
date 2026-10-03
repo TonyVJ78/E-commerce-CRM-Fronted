@@ -72,6 +72,12 @@ export const routes: Routes = [
       import('./features/tienda/gestion-productos/gestion-productos.component').then(m => m.GestionProductosComponent)
   },
   {
+    path: 'tiendas/pedidos',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/gestion-pedidos/gestion-pedidos.component').then(m => m.GestionPedidosComponent)
+  },
+  {
     path: 'tiendas/:tiendaId/productos/nuevo',
     canActivate: [empresaGuard],
     loadComponent: () =>
