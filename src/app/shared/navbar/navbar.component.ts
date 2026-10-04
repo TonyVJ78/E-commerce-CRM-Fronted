@@ -1,13 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 import { AuthService } from '../../core/services/auth.service';
 import { CarritoService } from '../../core/services/carrito.service';
 import { ItemCarritoDetalle } from '../../core/models/carrito.model';
 
-type MetodoPago = 'efectivo' | 'stripe';
+export type MetodoPago = 'efectivo' | 'stripe';
 
 @Component({
   selector: 'app-navbar',
@@ -16,33 +16,56 @@ type MetodoPago = 'efectivo' | 'stripe';
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css']
 })
-export class NavbarComponent implements OnInit {
+export class NavbarComponent implements OnInit, OnDestroy {
+  public readonly authService = inject(AuthService);
+  public readonly carritoService = inject(CarritoService);
+
   menuOpen = false;
   cartOpen = false;
   checkoutSuccess = false;
+  isCheckingOut = false;
+  checkoutError: string | null = null;
 
-  constructor(
-    public authService: AuthService,
-    public carritoService: CarritoService
-  ) {}
+  // --- Estado de Pasarela Stripe (CU-19) ---
+  metodoPago: MetodoPago = 'efectivo';
+  cargandoStripe = false;
+  pagandoStripe = false;
+  stripeError: string | null = null;
+
+  private stripe: Stripe | null = null;
+  private elements: StripeElements | null = null;
+  private paymentElement: StripePaymentElement | null = null;
+  private stripeMontado = false;
+  private stripePreload: Promise<{ stripe: Stripe; clientSecret: string }> | null = null;
+  private firmaCarrito = '';
+  /** Firma (ítems|total) del carrito con la que se creó el PaymentIntent vigente. */
+  private firmaStripe = '';
+  private readonly subs = new Subscription();
 
   ngOnInit(): void {
     // Cargar carrito inicial para cualquier usuario autenticado
-    this.authService.currentUser$.subscribe(user => {
+    this.subs.add(this.authService.currentUser$.subscribe((user) => {
       if (user) {
         this.carritoService.cargarCarritoSilencioso();
       }
-    });
+    }));
 
     // El PaymentIntent se crea por el total del carrito en ese momento: si el
-    // cliente cambia cantidades o quita productos, hay que crear otro, porque
-    // si no pagaría un monto distinto al del carrito y el checkout lo rechazaría.
-    this.carritoService.cartData$.subscribe(data => {
+    // carrito cambia (cantidades, ítems quitados o agregados desde el catálogo),
+    // hay que crear otro cuando llega el total nuevo, porque si no se cobraría
+    // un monto distinto y el checkout lo rechazaría.
+    this.subs.add(this.carritoService.cartData$.subscribe((data) => {
       this.firmaCarrito = data ? `${data.total_items}|${data.total_global}` : '';
       if (this.cartOpen && this.stripePreload && this.firmaCarrito !== this.firmaStripe) {
         this.refrescarPagoStripe(data?.total_items ?? 0);
       }
-    });
+    }));
+  }
+
+  ngOnDestroy(): void {
+    this.resetPagoStripe();
+    this.setCartOpen(false);
+    this.subs.unsubscribe();
   }
 
   toggleMenu(): void {
@@ -55,10 +78,8 @@ export class NavbarComponent implements OnInit {
       this.checkoutSuccess = false;
       this.carritoService.obtenerCarrito().subscribe({
         next: (data) => {
-          // Precargar Stripe.js + el PaymentIntent en segundo plano mientras el
-          // usuario revisa su carrito, para que el formulario de tarjeta esté
-          // listo de inmediato si luego elige pagar con Stripe.
-          if (data.total_items > 0) {
+          // Precarga en segundo plano mientras el usuario revisa el carrito
+          if (data && data.total_items > 0) {
             this.precargarStripe();
           }
         },
@@ -74,11 +95,19 @@ export class NavbarComponent implements OnInit {
     this.resetPagoStripe();
   }
 
-  /** Abre/cierra el drawer y bloquea el scroll del fondo mientras está abierto, para que solo se pueda hacer scroll dentro del carrito. */
+  /**
+   * Abre/cierra el drawer lateral y bloquea el scroll del viewport para evitar desplazamientos accidentales de fondo.
+   */
   private setCartOpen(open: boolean): void {
     this.cartOpen = open;
-    document.body.style.overflow = open ? 'hidden' : '';
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.style.overflow = open ? 'hidden' : '';
+    }
   }
+
+  // --- Operaciones de Ítems en Carrito ---
+  // Cualquier cambio invalida el monto del PaymentIntent previo; la suscripción a
+  // cartData$ de ngOnInit lo recrea con el total actualizado, conservando el método elegido.
 
   incrementar(item: ItemCarritoDetalle): void {
     this.carritoService.actualizarCantidad(item.id, item.cantidad + 1).subscribe();
@@ -92,34 +121,20 @@ export class NavbarComponent implements OnInit {
     }
   }
 
-  isCheckingOut = false;
-  checkoutError: string | null = null;
-
-  // --- Pago con tarjeta (Stripe) — CU-19 ---
-  metodoPago: MetodoPago = 'efectivo';
-  cargandoStripe = false;
-  pagandoStripe = false;
-  stripeError: string | null = null;
-  private stripe: Stripe | null = null;
-  private elements: StripeElements | null = null;
-  private paymentElement: StripePaymentElement | null = null;
-  private stripeMontado = false;
-  private stripePreload: Promise<{ stripe: Stripe; clientSecret: string }> | null = null;
-  private firmaCarrito = '';
-  /** Firma (ítems|total) del carrito con la que se creó el PaymentIntent vigente. */
-  private firmaStripe = '';
-
   eliminar(itemId: number): void {
     this.carritoService.eliminarItem(itemId).subscribe();
   }
 
   vaciar(): void {
     if (confirm('¿Deseas vaciar todos los productos de tu carrito?')) {
+      this.resetPagoStripe();
       this.carritoService.vaciarCarrito().subscribe();
     }
   }
 
-  /** Cambia el método de pago del checkout; al elegir Stripe monta el formulario de tarjeta debajo, sin salir de la página. */
+  /**
+   * Cambia el método de pago activo. Si se selecciona tarjeta, monta el elemento seguro de Stripe.
+   */
   seleccionarMetodoPago(metodo: MetodoPago): void {
     if (this.metodoPago === metodo) return;
     this.metodoPago = metodo;
@@ -131,19 +146,21 @@ export class NavbarComponent implements OnInit {
     }
   }
 
-  /** Crea el PaymentIntent y carga Stripe.js por adelantado, sin esperar a que el usuario elija ese método de pago. */
+  /**
+   * Crea el PaymentIntent en el backend y descarga Stripe.js anticipadamente.
+   */
   private precargarStripe(): Promise<{ stripe: Stripe; clientSecret: string }> {
     const preload = firstValueFrom(this.carritoService.crearIntentoPagoStripe()).then(async (intento) => {
       const stripe = await loadStripe(intento.publishable_key);
       if (!stripe) {
-        throw new Error('No se pudo cargar el formulario de pago de Stripe.');
+        throw new Error('No se pudo inicializar la pasarela de pagos Stripe.');
       }
       return { stripe, clientSecret: intento.client_secret };
     });
 
     this.stripePreload = preload;
     this.firmaStripe = this.firmaCarrito;
-    preload.catch(() => {}); // evita "unhandled rejection"; el error real se maneja al mostrar el formulario
+    preload.catch(() => {}); // Previene errores no capturados en consola
     return preload;
   }
 
@@ -162,7 +179,7 @@ export class NavbarComponent implements OnInit {
         this.cargandoStripe = false;
       })
       .catch((err) => {
-        this.stripeError = err?.error?.error || err?.message || 'No se pudo iniciar el pago con Stripe.';
+        this.stripeError = err?.error?.error || err?.message || 'No se pudo cargar el formulario seguro de Stripe.';
         this.cargandoStripe = false;
         this.stripePreload = null;
       });
@@ -182,15 +199,21 @@ export class NavbarComponent implements OnInit {
     }
   }
 
-  /** Limpia el estado de Stripe. Desmonta el PaymentElement explícitamente porque el
-   * nodo `#stripe-payment-element` ya no se destruye al cerrar el carrito (se usa
-   * [hidden] para poder pivotear Efectivo/Stripe sin perder el formulario montado);
-   * sin este unmount, el siguiente montaje se haría sobre un nodo que ya tiene un
-   * iframe de una sesión de pago anterior. */
+  /**
+   * Limpia y destruye meticulosamente la instancia de Stripe y el nodo del DOM.
+   * Evita memory leaks, iframes huérfanos o colisiones al reabrir el drawer.
+   */
   private resetPagoStripe(): void {
     this.metodoPago = 'efectivo';
-    this.paymentElement?.unmount();
-    this.paymentElement = null;
+    if (this.paymentElement) {
+      try {
+        this.paymentElement.unmount();
+        this.paymentElement.destroy();
+      } catch {
+        // Ignora posibles excepciones si el elemento ya fue destruido
+      }
+      this.paymentElement = null;
+    }
     this.stripe = null;
     this.elements = null;
     this.stripeMontado = false;
@@ -198,42 +221,60 @@ export class NavbarComponent implements OnInit {
     this.pagandoStripe = false;
     this.stripePreload = null;
     this.firmaStripe = '';
+
+    if (typeof document !== 'undefined') {
+      const mountNode = document.getElementById('stripe-payment-element');
+      if (mountNode) {
+        mountNode.innerHTML = '';
+      }
+    }
   }
 
+  /**
+   * Confirma el pago en Stripe con confirmPayment() y ejecuta el checkout en el Backend.
+   */
   async pagarConStripe(): Promise<void> {
     if (!this.stripe || !this.elements || this.pagandoStripe) return;
     this.pagandoStripe = true;
     this.stripeError = null;
 
-    const { error, paymentIntent } = await this.stripe.confirmPayment({
-      elements: this.elements,
-      redirect: 'if_required',
-    });
+    try {
+      const { error, paymentIntent } = await this.stripe.confirmPayment({
+        elements: this.elements,
+        redirect: 'if_required',
+      });
 
-    if (error) {
-      this.stripeError = error.message || 'No se pudo procesar el pago con tarjeta.';
-      this.pagandoStripe = false;
-      return;
-    }
-
-    if (paymentIntent?.status !== 'succeeded') {
-      this.stripeError = 'El pago no se completó. Intenta nuevamente.';
-      this.pagandoStripe = false;
-      return;
-    }
-
-    this.carritoService.checkout('stripe', paymentIntent.id).subscribe({
-      next: () => {
+      if (error) {
+        this.stripeError = error.message || 'No se pudo procesar el pago con tarjeta.';
         this.pagandoStripe = false;
-        this.mostrarCheckoutExitoso();
-      },
-      error: (err) => {
-        this.pagandoStripe = false;
-        this.stripeError = err.error?.error || 'El pago se realizó pero no se pudo registrar el pedido. Contacta a soporte.';
+        return;
       }
-    });
+
+      if (paymentIntent?.status !== 'succeeded') {
+        this.stripeError = `El pago con tarjeta no se completó (estado: ${paymentIntent?.status}).`;
+        this.pagandoStripe = false;
+        return;
+      }
+
+      this.carritoService.checkout('stripe', paymentIntent.id).subscribe({
+        next: () => {
+          this.pagandoStripe = false;
+          this.mostrarCheckoutExitoso();
+        },
+        error: (err) => {
+          this.pagandoStripe = false;
+          this.stripeError = err.error?.error || 'El pago se debitó pero ocurrió un error al registrar el pedido. Contacta a soporte.';
+        }
+      });
+    } catch (err: any) {
+      this.pagandoStripe = false;
+      this.stripeError = err?.message || 'Error inesperado al conectar con Stripe.';
+    }
   }
 
+  /**
+   * Checkout tradicional para pago en efectivo o contra entrega.
+   */
   procederCheckout(): void {
     if (this.isCheckingOut) return;
     this.isCheckingOut = true;
@@ -262,7 +303,6 @@ export class NavbarComponent implements OnInit {
       this.checkoutSuccess = false;
     }, 2800);
   }
-
 
   logout(): void {
     this.setCartOpen(false);

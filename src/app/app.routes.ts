@@ -43,6 +43,17 @@ export const routes: Routes = [
       import('./features/producto/detalle-producto/detalle-producto.component').then(m => m.DetalleProductoComponent)
   },
   {
+    path: 'pedidos',
+    canActivate: [clienteGuard],
+    loadComponent: () =>
+      import('./features/cliente/pedidos/pedidos.component').then(m => m.PedidosClienteComponent)
+  },
+  {
+    path: 'mis-pedidos',
+    redirectTo: 'pedidos',
+    pathMatch: 'full'
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -83,6 +94,12 @@ export const routes: Routes = [
     canActivate: [empresaGuard],
     loadComponent: () =>
       import('./features/tienda/gestion-pedidos/gestion-pedidos.component').then(m => m.GestionPedidosComponent)
+  },
+  {
+    path: 'tiendas/identidad',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/identidad-marca/identidad-marca.component').then(m => m.IdentidadMarcaComponent)
   },
   {
     path: 'tiendas/:tiendaId/productos/nuevo',

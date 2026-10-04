@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -45,6 +45,7 @@ export type {
 
 @Injectable({ providedIn: 'root' })
 export class CarritoService {
+  private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/pedidos/carrito`;
 
   private readonly cartCountSubject = new BehaviorSubject<number>(0);
@@ -56,7 +57,7 @@ export class CarritoService {
   private readonly checkoutCompletedSubject = new Subject<CheckoutResponse>();
   public readonly checkoutCompleted$ = this.checkoutCompletedSubject.asObservable();
 
-  constructor(private readonly http: HttpClient) {
+  constructor() {
     // Si hay token de usuario, intentar precargar conteo del carrito
     if (localStorage.getItem('km_access_token')) {
       this.cargarCarritoSilencioso();
