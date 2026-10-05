@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import {
@@ -20,6 +20,8 @@ export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
   private readonly currentUserSubject = new BehaviorSubject<Usuario | null>(null);
   public readonly currentUser$ = this.currentUserSubject.asObservable();
+  private readonly sessionClosingSubject = new Subject<void>();
+  public readonly sessionClosing$ = this.sessionClosingSubject.asObservable();
 
   constructor(
     private readonly http: HttpClient,
@@ -71,6 +73,7 @@ export class AuthService {
   }
 
   logout(): Observable<any> {
+    this.sessionClosingSubject.next();
     const refresh = this.getRefreshToken();
     return this.http.post(`${this.apiUrl}/logout/`, { refresh }).pipe(
       tap(() => this.clearSession())

@@ -52,9 +52,29 @@ export interface DashboardVendedorMetrics {
   productos_activos: number;
   total_pedidos: number;
   pedidos_pendientes: number;
-  ingresos_totales: number;
+  tienda: Pick<Tienda, 'id' | 'nombre' | 'slug' | 'descripcion' | 'logo_url' | 'color_primario' | 'activa'>;
+  tienda_id: number;
+  tienda_nombre: string;
+  ingresos_totales: string;
   productos_bajo_stock: number;
-  grafico_ventas: VentaDia[];
+  ventas_semana: VentaDia[];
+  alertas_stock: AlertaStock[];
+}
+
+export interface AlertaStock {
+  producto_id: number;
+  producto_nombre: string;
+  variante_id: number;
+  variante_nombre: string;
+  sku: string;
+  stock: number;
+  stock_minimo: number;
+}
+
+export interface AlertasStockResponse {
+  tienda_id: number;
+  cantidad: number;
+  alertas_stock: AlertaStock[];
 }
 
 export type DashboardMetrics = DashboardVendedorMetrics;

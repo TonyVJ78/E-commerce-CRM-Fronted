@@ -1,12 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ProductoService } from '../../../core/services/producto.service';
 import { TiendaService } from '../../../core/services/tienda.service';
 import { CarritoService } from '../../../core/services/carrito.service';
 import { Producto, Tienda } from '../../../core/models';
+import { VarianteProducto } from '../../../core/models/producto.model';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-gestion-productos',
@@ -20,6 +22,14 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   tiendas: Tienda[] = [];
   tiendaSeleccionadaId: number | null = null;
   editForm: FormGroup;
+  inventarioForm: FormGroup<{stock: FormControl<number>; stock_minimo: FormControl<number>}>;
+  varianteEnEdicion: VarianteProducto | null = null;
+  guardandoInventario = false;
+  errorInventario = '';
+  exitoInventario = '';
+  private productosRequest?: Subscription;
+  private tiendasRequest?: Subscription;
+  private inventarioRequest?: Subscription;
 
   cargando = false;
   procesandoImagen = false;
@@ -39,7 +49,9 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
     private readonly fb: FormBuilder,
     private readonly productoService: ProductoService,
     private readonly tiendaService: TiendaService,
-    private readonly carritoService: CarritoService
+    private readonly carritoService: CarritoService,
+    private readonly route: ActivatedRoute,
+    private readonly auth: AuthService,
   ) {
     this.editForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(200)]],
@@ -49,10 +61,20 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
       imagen_url: [''],
       descripcion: ['']
     });
+    this.inventarioForm = this.fb.nonNullable.group({
+      stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
+      stock_minimo: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
+    });
   }
 
   ngOnInit(): void {
     this.cargarDatos();
+    this.subs.add(this.auth.sessionClosing$.subscribe(() => this.limpiarSesion()));
+    this.subs.add(this.auth.currentUser$.subscribe(user => {
+      if (!user) {
+        this.limpiarSesion();
+      }
+    }));
 
     this.subs.add(
       this.carritoService.checkoutCompleted$.subscribe(() => {
@@ -65,15 +87,20 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
+    this.productosRequest?.unsubscribe();
+    this.tiendasRequest?.unsubscribe();
+    this.inventarioRequest?.unsubscribe();
   }
 
   cargarDatos(): void {
     this.cargando = true;
-    this.tiendaService.listar().subscribe({
+    this.tiendasRequest?.unsubscribe();
+    this.tiendasRequest = this.tiendaService.listar().subscribe({
       next: (tiendas) => {
         this.tiendas = tiendas;
         if (tiendas.length > 0) {
-          this.tiendaSeleccionadaId = tiendas[0].id;
+          const solicitada = Number(this.route.snapshot.queryParamMap.get('tienda_id'));
+          this.tiendaSeleccionadaId = (tiendas.find(t => t.id === solicitada) ?? tiendas[0]).id;
           this.cargarProductosDeTienda(this.tiendaSeleccionadaId);
         } else {
           this.cargando = false;
@@ -88,14 +115,17 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
 
   cambiarTienda(tiendaId: number): void {
     this.tiendaSeleccionadaId = tiendaId;
+    this.productos = [];
+    this.cancelarEdicion();
     this.cargarProductosDeTienda(tiendaId);
   }
 
   private cargarProductosDeTienda(tiendaId: number): void {
+    this.productosRequest?.unsubscribe();
     this.cargando = true;
     this.limpiarMensajes();
 
-    this.productoService.listar(tiendaId).subscribe({
+    this.productosRequest = this.productoService.listar(tiendaId).subscribe({
       next: (data) => {
         const tiendaNombre = this.tiendas.find(t => t.id === tiendaId)?.nombre;
         this.productos = (data || []).map(p => {
@@ -117,6 +147,14 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
 
         this.paginaActual = 1;
         this.cargando = false;
+        const productoId = Number(this.route.snapshot.queryParamMap.get('producto_id'));
+        const varianteId = Number(this.route.snapshot.queryParamMap.get('variante_id'));
+        const producto = this.productos.find(p => p.id === productoId);
+        if (producto && !this.productoEnEdicion) {
+          this.iniciarEdicion(producto);
+          const variante = producto.variantes?.find(v => v.id === varianteId);
+          if (variante) this.revisarVariante(variante);
+        }
       },
       error: () => {
         this.mensajeError = 'Error al cargar los productos de la tienda.';
@@ -145,6 +183,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   }
 
   iniciarEdicion(producto: Producto): void {
+    this.varianteEnEdicion = null;
     this.productoEnEdicion = producto;
     this.limpiarMensajes();
     const currentImg = producto.imagen_url || (producto.imagenes && producto.imagenes.length > 0 ? producto.imagenes[0].url : '');
@@ -158,10 +197,63 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
       imagen_url: currentImg || '',
       descripcion: producto.descripcion || ''
     });
+    if ((producto.variantes?.length ?? 0) > 1) this.editForm.get('stock')?.disable();
+    else this.editForm.get('stock')?.enable();
+  }
+
+  private limpiarSesion(): void {
+    this.tiendasRequest?.unsubscribe();
+    this.productosRequest?.unsubscribe();
+    this.productos = [];
+    this.tiendas = [];
+    this.tiendaSeleccionadaId = null;
+    this.cancelarEdicion();
+  }
+
+  seleccionarTienda(event: Event): void {
+    this.cambiarTienda(Number((event.target as HTMLSelectElement).value));
+  }
+
+  revisarVariante(variante: VarianteProducto): void {
+    this.varianteEnEdicion = variante;
+    this.errorInventario = '';
+    this.exitoInventario = '';
+    this.inventarioForm.setValue({stock: variante.stock, stock_minimo: variante.stock_minimo});
+  }
+
+  guardarInventario(): void {
+    if (!this.productoEnEdicion || !this.varianteEnEdicion || this.inventarioForm.invalid || this.guardandoInventario) return;
+    const producto = this.productoEnEdicion;
+    const variante = this.varianteEnEdicion;
+    this.guardandoInventario = true;
+    this.errorInventario = '';
+    this.exitoInventario = '';
+    this.inventarioRequest = this.productoService.ajustarInventario(producto.tienda, producto.id, variante.id, {
+      ...this.inventarioForm.getRawValue(), stock_esperado: variante.stock,
+    }).subscribe({
+      next: actualizado => {
+        this.guardandoInventario = false;
+        if (this.productoEnEdicion !== producto) return;
+        Object.assign(variante, actualizado);
+        this.exitoInventario = 'Inventario actualizado. Las alertas se recalculan al consultar el panel.';
+        this.editForm.patchValue({stock: producto.variantes?.reduce((total, v) => total + v.stock, 0)});
+        this.cargarProductosDeTienda(producto.tienda);
+      },
+      error: error => {
+        this.guardandoInventario = false;
+        if (this.productoEnEdicion !== producto) return;
+        this.errorInventario = error.error?.detail ?? 'No se pudo ajustar el inventario. Reintenta o vuelve a consultar el producto.';
+      },
+    });
   }
 
   cancelarEdicion(): void {
+    this.inventarioRequest?.unsubscribe();
+    this.guardandoInventario = false;
     this.productoEnEdicion = null;
+    this.varianteEnEdicion = null;
+    this.errorInventario = '';
+    this.exitoInventario = '';
     this.imagenPreview = null;
     this.editForm.reset();
   }
@@ -280,7 +372,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
             ...prodActualizado,
             nombre: datosModificados.nombre,
             precio: datosModificados.precio,
-            stock: datosModificados.stock,
+            stock: prodActualizado.stock_total ?? datosModificados.stock ?? this.productos[idx].stock,
             descripcion: datosModificados.descripcion,
             categoria: datosModificados.categoria,
             imagen_url: nuevaImg,

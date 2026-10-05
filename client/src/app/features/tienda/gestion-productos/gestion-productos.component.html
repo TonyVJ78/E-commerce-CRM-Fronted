@@ -13,7 +13,7 @@
     <div class="header-actions">
       <div *ngIf="tiendas.length > 1" class="tienda-selector-wrapper">
         <label for="tiendaSelect" class="selector-label">Tienda:</label>
-        <select id="tiendaSelect" class="form-select-tienda" [value]="tiendaSeleccionadaId" (change)="cambiarTienda($any($event.target).value)">
+        <select id="tiendaSelect" class="form-select-tienda" [value]="tiendaSeleccionadaId" (change)="seleccionarTienda($event)">
           <option *ngFor="let t of tiendas" [value]="t.id">{{ t.nombre }}</option>
         </select>
       </div>
@@ -72,6 +72,24 @@
           ✕
         </button>
       </div>
+
+      <section class="modal-body-content" aria-label="Inventario por variante">
+        <h4>Inventario por variante</h4>
+        <button type="button" class="btn-action-edit" *ngFor="let variante of productoEnEdicion.variantes" (click)="revisarVariante(variante)">
+          {{ variante.nombre }} · {{ variante.sku }} · Stock {{ variante.stock }} / Mínimo {{ variante.stock_minimo }}
+        </button>
+        <form *ngIf="varianteEnEdicion" [formGroup]="inventarioForm" (ngSubmit)="guardarInventario()">
+          <h4>{{ varianteEnEdicion.nombre }} — {{ varianteEnEdicion.sku }}</h4>
+          <label for="stock-variante">Stock actual</label>
+          <input id="stock-variante" type="number" min="0" step="1" class="field-input" formControlName="stock">
+          <label for="minimo-variante">Stock mínimo</label>
+          <input id="minimo-variante" type="number" min="0" step="1" class="field-input" formControlName="stock_minimo">
+          <p *ngIf="errorInventario" role="alert">{{ errorInventario }}</p>
+          <p *ngIf="exitoInventario" role="status">{{ exitoInventario }}</p>
+          <button type="submit" class="btn-modal-save" [disabled]="guardandoInventario || inventarioForm.invalid">{{ guardandoInventario ? 'Guardando...' : 'Guardar inventario' }}</button>
+          <a routerLink="/panel-vendedor" [queryParams]="{tienda_id: tiendaSeleccionadaId}">Volver al panel y actualizar alertas</a>
+        </form>
+      </section>
 
       <form [formGroup]="editForm" (ngSubmit)="guardarEdicion()" class="modal-form">
         <div class="modal-body-content">

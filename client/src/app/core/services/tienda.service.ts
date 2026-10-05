@@ -9,7 +9,8 @@ import {
   VentaDia,
   TiendaIdentidad,
   TiendaIdentidadUpdate,
-  SlugDisponibilidad
+  SlugDisponibilidad,
+  AlertasStockResponse
 } from '../models/tienda.model';
 
 export type {
@@ -66,7 +67,11 @@ export class TiendaService {
     );
   }
 
-  getDashboardMetrics(): Observable<DashboardMetrics> {
-    return this.http.get<DashboardMetrics>(`${this.apiUrl}/dashboard/`);
+  getDashboardMetrics(tiendaId: number): Observable<DashboardMetrics> {
+    return this.http.get<DashboardMetrics>(`${this.apiUrl}/${tiendaId}/dashboard/`);
+  }
+
+  getAlertasStock(tiendaId: number): Observable<AlertasStockResponse> {
+    return this.http.get<AlertasStockResponse>(`${this.apiUrl}/${tiendaId}/alertas-stock/`);
   }
 }

@@ -6,6 +6,25 @@
     </div>
   </div>
 
+  <div class="panel-actions" *ngIf="tiendas.length">
+    <label for="panel-tienda">Tienda</label>
+    <select id="panel-tienda" [value]="tiendaId" (change)="seleccionarTienda($event)">
+      <option *ngFor="let tienda of tiendas" [value]="tienda.id">{{ tienda.nombre }}</option>
+    </select>
+    <button type="button" class="btn btn-primary" (click)="cargarMetricas()" [disabled]="loading">Actualizar panel</button>
+  </div>
+
+  <div *ngIf="!loading && !error && !tiendas.length" class="loading-state">
+    <p>No tienes tiendas registradas.</p>
+    <a routerLink="/tiendas">Registrar tienda</a>
+  </div>
+
+  <div *ngIf="!loading && metrics">
+    <h3>{{ metrics.tienda.nombre }}</h3>
+    <p>{{ metrics.tienda.descripcion }}</p>
+    <p>{{ metrics.tienda.activa ? 'Tienda activa' : 'Tienda inactiva' }} · {{ metrics.tienda.slug }}</p>
+  </div>
+
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>
     <p>Cargando métricas...</p>
@@ -13,14 +32,16 @@
 
   <div *ngIf="error" class="error-state">
     <p>{{ error }}</p>
+    <button type="button" class="btn btn-primary" (click)="reintentar()">Reintentar</button>
   </div>
 
   <div *ngIf="!loading && metrics" class="metrics-grid">
     <div class="metric-card">
       <div class="metric-header">
-        <h3>Ingresos Totales</h3>
+        <h3>Importe acumulado</h3>
       </div>
       <p class="metric-value">Bs {{ metrics.ingresos_totales | number:'1.2-2' }}</p>
+      <p class="metric-subtext">Pedidos no cancelados</p>
     </div>
 
     <div class="metric-card">
@@ -41,7 +62,12 @@
       <div class="metric-header">
         <h3>Productos Activos</h3>
       </div>
-      <p class="metric-value">{{ metrics.productos_activos }} <span class="metric-subtext">/ {{ metrics.total_productos }}</span></p>
+      <p class="metric-value">{{ metrics.productos_activos }}</p>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header"><h3>Productos totales</h3></div>
+      <p class="metric-value">{{ metrics.total_productos }}</p>
     </div>
 
     <div class="metric-card">
@@ -51,14 +77,35 @@
       <p class="metric-value">{{ metrics.productos_bajo_stock }}</p>
       <p class="status-alert" *ngIf="metrics.productos_bajo_stock > 0">Requiere reabastecimiento</p>
       <p class="status-ok" *ngIf="metrics.productos_bajo_stock === 0">Inventario saludable</p>
+      <p class="metric-subtext">Variantes afectadas</p>
+      <button type="button" class="btn btn-primary" (click)="abrirAlertas()">{{ mostrarAlertas ? 'Cerrar alertas' : 'Ver alertas' }}</button>
     </div>
   </div>
 
+  <section *ngIf="!loading && metrics && mostrarAlertas" class="alerts-section" aria-label="Alertas de stock bajo">
+    <h3>Alertas de stock bajo</h3>
+    <p *ngIf="loadingAlertas" role="status">Cargando alertas...</p>
+    <div *ngIf="errorAlertas" role="alert" class="error-state">
+      <p>{{ errorAlertas }}</p>
+      <button type="button" (click)="cargarAlertas()">Reintentar</button>
+    </div>
+    <p *ngIf="!loadingAlertas && !errorAlertas && !alertas.length">No hay alertas de stock bajo.</p>
+    <table *ngIf="!loadingAlertas && !errorAlertas && alertas.length">
+      <thead><tr><th>Producto</th><th>Variante</th><th>SKU</th><th>Stock actual</th><th>Stock mínimo</th><th>Acción</th></tr></thead>
+      <tbody><tr *ngFor="let alerta of alertas">
+        <td>{{ alerta.producto_nombre }}</td><td>{{ alerta.variante_nombre }}</td><td>{{ alerta.sku }}</td>
+        <td>{{ alerta.stock }}</td><td>{{ alerta.stock_minimo }}</td>
+        <td><a routerLink="/tiendas/productos" [queryParams]="{tienda_id: tiendaId, producto_id: alerta.producto_id, variante_id: alerta.variante_id}">Revisar inventario</a></td>
+      </tr></tbody>
+    </table>
+  </section>
+
   <!-- Gráfico de Ventas -->
   <div *ngIf="!loading && metrics" class="chart-container" style="position: relative;">
-    <h3>Productos Vendidos (Últimos 7 días)</h3>
+    <h3>Unidades vendidas — últimos 7 días</h3>
+    <p *ngIf="sinActividad">No hay ventas en los últimos 7 días.</p>
     <div style="position: relative; height: 85%; width: 100%;">
-      <canvas #ventasChart></canvas>
+      <canvas #ventasChart role="img" aria-label="Unidades vendidas por día durante los últimos siete días"></canvas>
     </div>
   </div>
 </div>

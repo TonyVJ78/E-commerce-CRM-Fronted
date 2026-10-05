@@ -38,6 +38,13 @@ export class ProductoService {
     return this.http.get<Producto>(`${this.apiUrl}/productos/${idOrTiendaId}/`);
   }
 
+  ajustarInventario(tiendaId: number, productoId: number, varianteId: number,
+    data: {stock: number; stock_minimo: number; stock_esperado: number}): Observable<Pick<VarianteProducto, 'id' | 'stock' | 'stock_minimo'>> {
+    return this.http.patch<Pick<VarianteProducto, 'id' | 'stock' | 'stock_minimo'>>(
+      `${this.apiUrl}/${tiendaId}/productos/${productoId}/variantes/${varianteId}/inventario/`, data,
+    );
+  }
+
   crear(tiendaId: number, data: FormData): Observable<Producto> {
     return this.http.post<Producto>(`${this.apiUrl}/${tiendaId}/productos/`, data);
   }
