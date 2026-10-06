@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, OnChanges, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnChanges, Output, inject } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import DOMPurify from 'dompurify';
@@ -40,20 +40,18 @@ DOMPurify.addHook('afterSanitizeAttributes', nodo => {
   styleUrls: ['./markdown.component.css']
 })
 export class MarkdownComponent implements OnChanges {
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly router = inject(Router);
+
   @Input() texto = '';
   /** Se emite al navegar a un producto desde el texto. */
   @Output() productoAbierto = new EventEmitter<number>();
 
   html: SafeHtml = '';
 
-  constructor(
-    private readonly sanitizer: DomSanitizer,
-    private readonly router: Router
-  ) {}
-
   ngOnChanges(): void {
     const fuente = (this.texto || '').replace(ENLACE_PRODUCTO, '](/producto/$1)');
-    const crudo = marked.parse(fuente, { async: false });
+    const crudo = marked.parse(fuente, { async: false }) as string;
     const limpio = DOMPurify.sanitize(crudo, { ADD_ATTR: ['target'] });
     // Ya pasó por DOMPurify; el sanitizador de Angular borraría los data-*.
     this.html = this.sanitizer.bypassSecurityTrustHtml(limpio);

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription, catchError, of, switchMap } from 'rxjs';
 import { ProductoCatalogo, VarianteCatalogo } from '../../../core/models';
@@ -24,6 +24,10 @@ const IMAGEN_RESPALDO =
   styleUrls: ['./detalle-producto.component.css']
 })
 export class DetalleProductoComponent implements OnInit, OnDestroy {
+  private readonly route = inject(ActivatedRoute);
+  private readonly catalogoService = inject(CatalogoService);
+  private readonly carritoService = inject(CarritoService);
+
   producto: ProductoCatalogo | null = null;
   variante: VarianteCatalogo | null = null;
   imagenActiva = '';
@@ -34,12 +38,6 @@ export class DetalleProductoComponent implements OnInit, OnDestroy {
   mensajeError = '';
 
   private readonly subs = new Subscription();
-
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly catalogoService: CatalogoService,
-    private readonly carritoService: CarritoService
-  ) {}
 
   ngOnInit(): void {
     // El chat puede abrir otro producto estando ya en esta ruta: se escucha el

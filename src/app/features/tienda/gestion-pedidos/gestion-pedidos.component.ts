@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -30,6 +30,9 @@ const ACCION_AVANZAR: Partial<Record<EstadoPedido, string>> = {
   styleUrls: ['./gestion-pedidos.component.css'],
 })
 export class GestionPedidosComponent implements OnInit, OnDestroy {
+  private readonly tiendaService = inject(TiendaService);
+  private readonly pedidoService = inject(PedidoEmpresaService);
+
   readonly flujo = FLUJO_PEDIDO;
   readonly etiquetas = ETIQUETA_ESTADO_PEDIDO;
   readonly pestanas: { valor: FiltroEstado; etiqueta: string }[] = [
@@ -60,11 +63,6 @@ export class GestionPedidosComponent implements OnInit, OnDestroy {
 
   private readonly busqueda$ = new Subject<string>();
   private readonly subs = new Subscription();
-
-  constructor(
-    private readonly tiendaService: TiendaService,
-    private readonly pedidoService: PedidoEmpresaService,
-  ) {}
 
   ngOnInit(): void {
     this.subs.add(

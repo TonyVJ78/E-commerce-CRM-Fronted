@@ -1,177 +1,147 @@
-import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TiendaService, DashboardMetrics } from '../../../core/services/tienda.service';
+import { RouterLink } from '@angular/router';
+import { TiendaService, DashboardMetrics, VentaDia } from '../../../core/services/tienda.service';
 import Chart from 'chart.js/auto';
 
 @Component({
   selector: 'app-dashboard-empresa',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard-empresa.component.html',
-  styles: [`
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-      gap: 1.25rem;
-      margin-bottom: 2rem;
-    }
-    .metric-card {
-      background-color: #ffffff;
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border: 1px solid #f3f4f6;
-      transition: all 0.2s;
-    }
-    .metric-card:hover {
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transform: translateY(-2px);
-    }
-    .metric-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    .metric-header h3 {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin: 0;
-    }
-    .metric-value {
-      font-size: 1.875rem;
-      font-weight: 700;
-      color: #1f2937;
-      margin: 0;
-    }
-    .metric-subtext {
-      font-size: 0.875rem;
-      font-weight: 400;
-      color: #9ca3af;
-    }
-    .icon-container {
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .icon-green { background-color: #dcfce7; color: #16a34a; }
-    .icon-yellow { background-color: #fef9c3; color: #ca8a04; }
-    .icon-blue { background-color: #dbeafe; color: #2563eb; }
-    .icon-purple { background-color: #f3e8ff; color: #9333ea; }
-    .icon-red { background-color: #fee2e2; color: #dc2626; }
-    .status-alert { font-size: 0.875rem; color: #ef4444; margin-top: 0.5rem; }
-    .status-ok { font-size: 0.875rem; color: #22c55e; margin-top: 0.5rem; }
-    .loading-state { text-align: center; padding: 4rem; color: #6b7280; }
-    .error-state { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 1rem; color: #b91c1c; max-width: 1200px; margin: 0 auto 2rem; }
-    
-    .chart-container {
-      background-color: #ffffff;
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border: 1px solid #f3f4f6;
-      margin-top: 2rem;
-      height: 400px;
-    }
-    .chart-container h3 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #111827;
-      margin-bottom: 1.5rem;
-    }
-
-    @media (max-width: 640px) {
-      .metrics-grid {
-        grid-template-columns: 1fr;
-        gap: 0.85rem;
-        margin-bottom: 1.25rem;
-      }
-      .metric-card {
-        padding: 1.15rem;
-      }
-      .chart-container {
-        padding: 1rem;
-        height: 280px;
-        margin-top: 1.25rem;
-      }
-      .chart-container h3 {
-        font-size: 1.05rem;
-        margin-bottom: 1rem;
-      }
-    }
-  `]
-
+  styleUrls: ['./dashboard-empresa.component.css']
 })
 export class DashboardEmpresaComponent implements OnInit {
-  metrics: DashboardMetrics | null = null;
-  loading: boolean = true;
-  error: string | null = null;
-  chart: any;
+  private readonly tiendaService = inject(TiendaService);
 
-  @ViewChild('ventasChart') ventasChart!: ElementRef;
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+  readonly metrics = signal<DashboardMetrics | null>(null);
+  readonly usarFallback = signal(false);
 
-  constructor(private tiendaService: TiendaService) {}
+  private chartInstance: Chart | null = null;
+  @ViewChild('ventasChart') ventasChart?: ElementRef<HTMLCanvasElement>;
+
+  readonly ventasSemana = computed<VentaDia[]>(() => {
+    const m = this.metrics();
+    if (!m) return [];
+    const lista = (m as any).grafico_ventas || (m as any).ventas_semana;
+    if (Array.isArray(lista) && lista.length > 0) {
+      return lista;
+    }
+    const dias: VentaDia[] = [];
+    const hoy = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(hoy);
+      d.setDate(d.getDate() - i);
+      const diaStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      dias.push({ fecha: diaStr, cantidad: 0 });
+    }
+    return dias;
+  });
+
+  readonly maxVentaSemana = computed<number>(() => {
+    const vals = this.ventasSemana().map(v => v.cantidad || 0);
+    const max = Math.max(...vals, 0);
+    return max > 0 ? max : 1;
+  });
+
+  readonly totalVentasSemana = computed<number>(() => {
+    return this.ventasSemana().reduce((sum, v) => sum + (v.cantidad || 0), 0);
+  });
+
+  readonly mejorDia = computed<string>(() => {
+    const list = this.ventasSemana();
+    if (!list.length) return '';
+    let top = list[0];
+    for (const d of list) {
+      if ((d.cantidad || 0) > (top.cantidad || 0)) {
+        top = d;
+      }
+    }
+    return top.cantidad > 0 ? top.fecha : '';
+  });
 
   ngOnInit(): void {
     this.cargarMetricas();
   }
 
   cargarMetricas(): void {
-    this.loading = true;
+    this.loading.set(true);
+    this.error.set(null);
     this.tiendaService.getDashboardMetrics().subscribe({
       next: (data) => {
-        this.metrics = data;
-        this.loading = false;
-        // Esperar a que la vista se renderice antes de crear el gráfico
-        setTimeout(() => {
-          this.createChart();
-        }, 0);
+        this.metrics.set(data);
+        this.loading.set(false);
+        setTimeout(() => this.inicializarGrafico(), 0);
       },
       error: (err) => {
-        this.error = 'No se pudieron cargar las métricas. Verifica tu conexión o intenta más tarde.';
-        this.loading = false;
-        console.error('Error cargando métricas del dashboard:', err);
+        this.error.set('No se pudieron cargar las metricas. Verifica tu conexion o intenta mas tarde.');
+        this.loading.set(false);
+        console.error('Error cargando metricas del dashboard:', err);
       }
     });
   }
 
-  createChart() {
-    if (!this.metrics || !this.ventasChart) return;
-    
-    const labels = this.metrics.grafico_ventas.map(v => v.fecha);
-    const data = this.metrics.grafico_ventas.map(v => v.cantidad);
+  private inicializarGrafico(): void {
+    if (!this.ventasChart?.nativeElement) {
+      this.usarFallback.set(true);
+      return;
+    }
 
-    this.chart = new Chart(this.ventasChart.nativeElement, {
-      type: 'bar', // Gráfico de barras
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Productos Vendidos',
-          data: data,
-          backgroundColor: 'rgba(200, 16, 46, 0.8)', // Usando el rojo Kantu Market
-          borderColor: '#C8102E',
-          borderWidth: 1,
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
+    try {
+      if (this.chartInstance) {
+        this.chartInstance.destroy();
+        this.chartInstance = null;
+      }
+
+      const ventas = this.ventasSemana();
+      const labels = ventas.map(v => v.fecha);
+      const data = ventas.map(v => v.cantidad || 0);
+      const maxVal = this.maxVentaSemana();
+
+      const backgroundColors = data.map(val => (val === maxVal && val > 0) ? '#F5B301' : '#C8102E');
+
+      this.chartInstance = new Chart(this.ventasChart.nativeElement, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Productos Vendidos',
+            data: data,
+            backgroundColor: backgroundColors,
+            borderRadius: 6,
+            borderSkipped: false
+          }]
         },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { stepSize: 1 }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Vendidos: ${ctx.parsed.y} unidades`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#5F6675', font: { family: 'Inter', weight: 600 } }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: '#E6E8EE' },
+              ticks: { stepSize: 1, color: '#5F6675', font: { family: 'Inter' } }
+            }
           }
         }
-      }
-    });
+      });
+      this.usarFallback.set(false);
+    } catch (err) {
+      console.warn('Error inicializando Chart.js, activando fallback visual CSS:', err);
+      this.usarFallback.set(true);
+    }
   }
 }

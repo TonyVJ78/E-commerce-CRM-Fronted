@@ -1,17 +1,18 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ProductoService } from '../../../core/services/producto.service';
 import { TiendaService } from '../../../core/services/tienda.service';
 import { CarritoService } from '../../../core/services/carrito.service';
-import { Producto, Tienda } from '../../../core/models';
+import { Producto, Tienda, VarianteProducto } from '../../../core/models';
+import { MovimientoStock } from '../../../core/services/producto.service';
 
 @Component({
   selector: 'app-gestion-productos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './gestion-productos.component.html',
   styleUrls: ['./gestion-productos.component.css']
 })
@@ -19,7 +20,6 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   productos: Producto[] = [];
   tiendas: Tienda[] = [];
   tiendaSeleccionadaId: number | null = null;
-  editForm: FormGroup;
 
   cargando = false;
   procesandoImagen = false;
@@ -27,6 +27,26 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   imagenPreview: string | null = null;
   dragOver = false;
   categoriasDisponibles: string[] = [];
+  productoInventario: Producto | null = null;
+  varianteInventarioId: number | null = null;
+  modoAjuste: 'relativo' | 'absoluto' = 'relativo';
+  deltaStock: number | null = null;
+  nuevoStockAbsoluto: number | null = null;
+  tipoAjuste: 'INGRESO' | 'SALIDA' | 'CORRECCION' = 'CORRECCION';
+  motivoStock = '';
+  motivosFrecuentes = [
+    { label: 'Reposición / Compra', tipo: 'INGRESO' as const, motivo: 'Recepción de mercadería de proveedor' },
+    { label: 'Merma / Daño', tipo: 'SALIDA' as const, motivo: 'Producto dañado o defectuoso en almacén' },
+    { label: 'Conteo / Cuadre', tipo: 'CORRECCION' as const, motivo: 'Cuadre según inventario físico' },
+    { label: 'Devolución cliente', tipo: 'INGRESO' as const, motivo: 'Devolución de cliente reintegrada a inventario' }
+  ];
+  movimientosStock: MovimientoStock[] = [];
+  cargandoHistorial = false;
+  guardandoStock = false;
+  errorStock = '';
+  errorHistorial = '';
+  private historialRequest = 0;
+  private contextoInventario = 0;
 
   mensajeExito = '';
   mensajeError = '';
@@ -35,21 +55,18 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
 
   private readonly subs = new Subscription();
 
-  constructor(
-    private readonly fb: FormBuilder,
-    private readonly productoService: ProductoService,
-    private readonly tiendaService: TiendaService,
-    private readonly carritoService: CarritoService
-  ) {
-    this.editForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(200)]],
-      precio: [0, [Validators.required, Validators.min(0.01)]],
-      stock: [0, [Validators.required, Validators.min(0)]],
-      categoria: [''],
-      imagen_url: [''],
-      descripcion: ['']
-    });
-  }
+  private readonly fb = inject(FormBuilder);
+  private readonly productoService = inject(ProductoService);
+  private readonly tiendaService = inject(TiendaService);
+  private readonly carritoService = inject(CarritoService);
+
+  editForm: FormGroup = this.fb.group({
+    nombre: ['', [Validators.required, Validators.maxLength(200)]],
+    precio: [0, [Validators.required, Validators.min(0.01)]],
+    categoria: [''],
+    imagen_url: [''],
+    descripcion: ['']
+  });
 
   ngOnInit(): void {
     this.cargarDatos();
@@ -153,7 +170,6 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
     this.editForm.patchValue({
       nombre: producto.nombre,
       precio: producto.precio,
-      stock: producto.stock,
       categoria: producto.categoria || '',
       imagen_url: currentImg || '',
       descripcion: producto.descripcion || ''
@@ -266,7 +282,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
 
     const tiendaId = this.productoEnEdicion.tienda || this.tiendaSeleccionadaId || 0;
     const productoId = this.productoEnEdicion.id;
-    const datosModificados = this.editForm.value;
+    const { stock: _stockIgnorado, ...datosModificados } = this.editForm.value;
 
     this.productoService.actualizar(tiendaId, productoId, datosModificados).subscribe({
       next: (prodActualizado) => {
@@ -280,7 +296,6 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
             ...prodActualizado,
             nombre: datosModificados.nombre,
             precio: datosModificados.precio,
-            stock: datosModificados.stock,
             descripcion: datosModificados.descripcion,
             categoria: datosModificados.categoria,
             imagen_url: nuevaImg,
@@ -292,6 +307,146 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.cargando = false;
         this.mensajeError = err.error?.detail || 'Error al guardar los cambios del producto.';
+      }
+    });
+  }
+
+  abrirInventario(producto: Producto): void {
+    if (this.guardandoStock) return;
+    this.historialRequest++;
+    this.contextoInventario++;
+    this.cargandoHistorial = false;
+    this.productoInventario = producto;
+    this.varianteInventarioId = null;
+    this.movimientosStock = [];
+    this.modoAjuste = 'relativo';
+    this.deltaStock = null;
+    this.nuevoStockAbsoluto = null;
+    this.tipoAjuste = 'CORRECCION';
+    this.motivoStock = '';
+    this.errorStock = '';
+    this.errorHistorial = '';
+  }
+
+  cerrarInventario(): void {
+    if (this.guardandoStock) return;
+    this.historialRequest++;
+    this.contextoInventario++;
+    this.cargandoHistorial = false;
+    this.productoInventario = null;
+    this.varianteInventarioId = null;
+    this.movimientosStock = [];
+  }
+
+  get varianteInventario(): VarianteProducto | undefined {
+    return this.productoInventario?.variantes?.find(v => v.id === this.varianteInventarioId);
+  }
+
+  get deltaCalculado(): number | null {
+    if (!this.varianteInventario) return null;
+    if (this.modoAjuste === 'relativo') {
+      const d = Number(this.deltaStock);
+      return Number.isInteger(d) ? d : null;
+    }
+    const abs = Number(this.nuevoStockAbsoluto);
+    return Number.isInteger(abs) && abs >= 0 ? abs - this.varianteInventario.stock : null;
+  }
+
+  get ajusteStockValido(): boolean {
+    const delta = this.deltaCalculado;
+    const reason = this.motivoStock.trim();
+    return !!this.varianteInventario &&
+      delta !== null &&
+      delta !== 0 &&
+      !!reason &&
+      reason.length <= 255 &&
+      this.varianteInventario.stock + delta >= 0;
+  }
+
+  get stockProyectado(): number | null {
+    if (!this.varianteInventario) return null;
+    const delta = this.deltaCalculado;
+    return delta !== null ? this.varianteInventario.stock + delta : null;
+  }
+
+  get alertaStockBajoProyectado(): boolean {
+    if (!this.varianteInventario || this.stockProyectado === null) return false;
+    return this.stockProyectado <= (this.varianteInventario.stock_minimo || 5);
+  }
+
+  seleccionarMotivoFrecuente(mf: { tipo: 'INGRESO' | 'SALIDA' | 'CORRECCION', motivo: string }): void {
+    this.tipoAjuste = mf.tipo;
+    this.motivoStock = mf.motivo;
+  }
+
+  aplicarPasoDelta(paso: number): void {
+    if (this.modoAjuste === 'relativo') {
+      const actual = Number(this.deltaStock) || 0;
+      this.deltaStock = actual + paso;
+    } else if (this.varianteInventario) {
+      const actual = this.nuevoStockAbsoluto !== null ? Number(this.nuevoStockAbsoluto) : this.varianteInventario.stock;
+      this.nuevoStockAbsoluto = Math.max(0, actual + paso);
+    }
+  }
+
+  seleccionarVariante(id: number): void {
+    if (this.guardandoStock || !this.productoInventario?.variantes?.some(v => v.id === id)) return;
+    this.varianteInventarioId = id;
+    this.contextoInventario++;
+    this.movimientosStock = [];
+    this.deltaStock = null;
+    const v = this.varianteInventario;
+    this.nuevoStockAbsoluto = v ? v.stock : null;
+    this.errorHistorial = '';
+    const request = ++this.historialRequest;
+    const tienda = this.productoInventario.tienda || this.tiendaSeleccionadaId;
+    const productoId = this.productoInventario.id;
+    if (!tienda) return;
+    this.cargandoHistorial = true;
+    this.productoService.listarMovimientosStock(tienda, id).subscribe({
+      next: rows => { if (request === this.historialRequest && id === this.varianteInventarioId && productoId === this.productoInventario?.id) { this.movimientosStock = rows; this.cargandoHistorial = false; } },
+      error: () => { if (request === this.historialRequest && productoId === this.productoInventario?.id) { this.errorHistorial = 'No se pudo cargar el historial de movimientos.'; this.cargandoHistorial = false; } }
+    });
+  }
+
+  guardarAjusteStock(): void {
+    const variant = this.varianteInventario;
+    const tienda = this.productoInventario?.tienda || this.tiendaSeleccionadaId;
+    const delta = this.deltaCalculado;
+    const reason = this.motivoStock.trim();
+    const product = this.productoInventario;
+    if (this.guardandoStock || !variant || !product || !tienda || delta === null || delta === 0 || !reason || reason.length > 255 || variant.stock + delta < 0) return;
+    const productId = product.id;
+    const variantId = variant.id;
+    const contextId = this.contextoInventario;
+    const payload = this.modoAjuste === 'absoluto' && this.nuevoStockAbsoluto !== null
+      ? { nuevo_stock: Number(this.nuevoStockAbsoluto), reason, tipo_ajuste: this.tipoAjuste }
+      : { delta, reason, tipo_ajuste: this.tipoAjuste };
+
+    this.guardandoStock = true;
+    this.errorStock = '';
+    this.productoService.ajustarStock(tienda, variant.id, payload).subscribe({
+      next: () => {
+        this.guardandoStock = false;
+        this.productos = this.productos.map(item => {
+          if (item.id !== productId) return item;
+          const variantes = item.variantes?.map(v => v.id === variantId ? { ...v, stock: v.stock + delta } : v);
+          const stock = variantes?.reduce((total, v) => total + v.stock, 0) ?? ((item.stock || 0) + delta);
+          return { ...item, variantes, stock, stock_total: stock };
+        });
+        if (this.productoInventario?.id === productId) {
+          this.productoInventario = { ...this.productoInventario, variantes: this.productoInventario.variantes?.map(v => v.id === variantId ? { ...v, stock: v.stock + delta } : v) };
+        }
+        this.deltaStock = null;
+        this.nuevoStockAbsoluto = variant.stock + delta;
+        this.cargarProductosDeTienda(tienda);
+        if (contextId === this.contextoInventario && this.productoInventario?.id === productId && this.varianteInventarioId === variantId) {
+          this.seleccionarVariante(variantId);
+        }
+      },
+      error: err => {
+        this.guardandoStock = false;
+        if (this.productoInventario?.id === productId) this.errorStock = err.status === 400 ? (err.error?.detail || err.error?.reason?.[0] || 'El ajuste no es válido; el stock no puede quedar negativo.') : 'No se pudo guardar el ajuste de stock. Comprueba tu conexión e inténtalo de nuevo.';
       }
     });
   }

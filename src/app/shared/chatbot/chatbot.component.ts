@@ -5,7 +5,8 @@ import {
   ElementRef,
   HostListener,
   OnDestroy,
-  ViewChild
+  ViewChild,
+  inject
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -32,6 +33,8 @@ const IMAGEN_RESPALDO =
   styleUrls: ['./chatbot.component.css']
 })
 export class ChatbotComponent implements AfterViewChecked, OnDestroy {
+  private readonly chatbot = inject(ChatbotService);
+
   @ViewChild('lista') lista?: ElementRef<HTMLElement>;
   @ViewChild('entrada') entrada?: ElementRef<HTMLTextAreaElement>;
 
@@ -43,7 +46,7 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
   private bajarAlFinal = false;
   private readonly subs = new Subscription();
 
-  constructor(private readonly chatbot: ChatbotService) {
+  constructor() {
     this.subs.add(this.chatbot.mensajes$.subscribe(m => {
       this.mensajes = m;
       this.bajarAlFinal = true;

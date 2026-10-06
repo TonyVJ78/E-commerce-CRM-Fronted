@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -22,6 +22,9 @@ const SALUDO: MensajeChat = {
  */
 @Injectable({ providedIn: 'root' })
 export class ChatbotService {
+  private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
+
   private readonly apiUrl = `${environment.apiUrl}/ia/chatbot/`;
   private readonly mensajesSubject = new BehaviorSubject<MensajeChat[]>([SALUDO]);
   readonly mensajes$ = this.mensajesSubject.asObservable();
@@ -30,11 +33,8 @@ export class ChatbotService {
 
   private claveUsuario: string | null = null;
 
-  constructor(
-    private readonly http: HttpClient,
-    authService: AuthService
-  ) {
-    authService.currentUser$.subscribe(usuario => {
+  constructor() {
+    this.authService.currentUser$.subscribe(usuario => {
       this.claveUsuario = usuario ? `km_chat_${usuario.id}` : null;
       this.mensajesSubject.next(this.leerGuardados());
     });
@@ -108,7 +108,7 @@ export class ChatbotService {
 
   private mensajeError(error: HttpErrorResponse): string {
     if (error.status === 429) {
-      return 'Vas muy rápido 😅. Espera un momento y vuelve a intentarlo.';
+      return 'Vas muy rápido. Espera un momento y vuelve a intentarlo.';
     }
     if (error.status === 0) {
       return 'No pude conectarme con el servidor. Revisa tu conexión e intenta de nuevo.';

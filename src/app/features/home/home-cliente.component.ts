@@ -2,14 +2,14 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import {
   ProductoCatalogo,
   TiendaCatalogo,
   VarianteCatalogo,
   CategoriaCatalogo
 } from '../../core/models';
-import { CatalogoService } from '../../core/services/catalogo.service';
+import { CatalogoService, FiltrosCatalogo } from '../../core/services/catalogo.service';
 import { CarritoService } from '../../core/services/carrito.service';
 import { RecomendacionService } from '../../core/services/recomendacion.service';
 import { RecomendacionesComponent } from './recomendaciones/recomendaciones.component';
@@ -34,6 +34,13 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
   categoriaSeleccionadaId: number | null = null;
   tiendaSeleccionadaId: number | null = null;
   terminoBusqueda = '';
+  precioMinimo: number | null = null;
+  precioMaximo: number | null = null;
+  soloEnStock = false;
+  ordenSeleccionado = 'recientes';
+  panelFiltrosAbierto = false;
+
+  private readonly busquedaSubject = new Subject<string>();
 
   // Estados de carga
   cargando = false;
@@ -48,6 +55,17 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
   private readonly subs = new Subscription();
 
   ngOnInit(): void {
+    // Configurar búsqueda reactiva con debounce de 350ms
+    this.subs.add(
+      this.busquedaSubject.pipe(
+        debounceTime(350),
+        distinctUntilChanged()
+      ).subscribe(termino => {
+        this.terminoBusqueda = termino;
+        this.aplicarFiltros(true);
+      })
+    );
+
     this.cargarFiltrosYCatalogoGeneral();
 
     // Escuchar cuando el usuario hace checkout en el carrito
@@ -98,19 +116,40 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
     this.aplicarFiltros(false);
   }
 
+  onBusquedaInput(valor: string): void {
+    this.busquedaSubject.next(valor);
+  }
+
+  togglePanelFiltros(): void {
+    this.panelFiltrosAbierto = !this.panelFiltrosAbierto;
+  }
+
+  get cantidadFiltrosActivos(): number {
+    let count = 0;
+    if (this.categoriaSeleccionadaId) count++;
+    if (this.tiendaSeleccionadaId) count++;
+    if (this.terminoBusqueda.trim()) count++;
+    if (this.precioMinimo !== null) count++;
+    if (this.precioMaximo !== null) count++;
+    if (this.soloEnStock) count++;
+    if (this.ordenSeleccionado !== 'recientes') count++;
+    return count;
+  }
+
   /**
    * Arma los filtros del catálogo general. Cada tienda tiene su propia fila de
    * "Accesorios", así que sin una tienda elegida se filtra por nombre para
    * juntar esa categoría en todas las tiendas; el id sólo sirve dentro de una.
    */
-  private construirFiltros(): { categoria?: number; categoriaNombre?: string; tienda?: number; q?: string } {
-    const filtros: { categoria?: number; categoriaNombre?: string; tienda?: number; q?: string } = {};
+  private construirFiltros(): FiltrosCatalogo {
+    const filtros: FiltrosCatalogo = {};
+
     if (this.categoriaSeleccionadaId) {
       const cat = this.categorias.find(c => c.id === this.categoriaSeleccionadaId);
       if (this.tiendaSeleccionadaId || !cat) {
         filtros.categoria = this.categoriaSeleccionadaId;
       } else {
-        filtros.categoriaNombre = cat.nombre;
+        filtros.categoria_nombre = cat.nombre;
       }
     }
     if (this.tiendaSeleccionadaId) {
@@ -118,6 +157,18 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
     }
     if (this.terminoBusqueda.trim()) {
       filtros.q = this.terminoBusqueda.trim();
+    }
+    if (this.precioMinimo !== null && this.precioMinimo >= 0) {
+      filtros.precio_min = this.precioMinimo;
+    }
+    if (this.precioMaximo !== null && this.precioMaximo >= 0) {
+      filtros.precio_max = this.precioMaximo;
+    }
+    if (this.soloEnStock) {
+      filtros.en_stock = true;
+    }
+    if (this.ordenSeleccionado) {
+      filtros.orden = this.ordenSeleccionado;
     }
     return filtros;
   }
@@ -127,15 +178,13 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
     this.limpiarMensajes();
 
     const filtros = this.construirFiltros();
-    if (filtros.q) {
+    if (filtros.q && registrarBusqueda && this.tiendaSeleccionadaId) {
       // Telemetría asíncrona fire-and-forget de búsqueda
-      if (registrarBusqueda && this.tiendaSeleccionadaId) {
-        this.recomendacionService.notificarInteraccion({
-          tienda_id: this.tiendaSeleccionadaId,
-          tipo_interaccion: 'SEARCH',
-          termino_busqueda: this.terminoBusqueda
-        });
-      }
+      this.recomendacionService.notificarInteraccion({
+        tienda_id: this.tiendaSeleccionadaId,
+        tipo_interaccion: 'SEARCH',
+        termino_busqueda: this.terminoBusqueda
+      });
     }
 
     this.catalogoService.listarTodosLosProductos(filtros).subscribe({
@@ -279,6 +328,16 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
     this.categoriaSeleccionadaId = null;
     this.tiendaSeleccionadaId = null;
     this.terminoBusqueda = '';
+    this.precioMinimo = null;
+    this.precioMaximo = null;
+    this.soloEnStock = false;
+    this.ordenSeleccionado = 'recientes';
+    this.aplicarFiltros();
+  }
+
+  limpiarPrecio(): void {
+    this.precioMinimo = null;
+    this.precioMaximo = null;
     this.aplicarFiltros();
   }
 
