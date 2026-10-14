@@ -80,6 +80,14 @@ export const routes: Routes = [
       import('./features/admin/accesos/accesos.component').then(m => m.AccesosComponent)
   },
   {
+    // Informes con IA (CU-34): el acceso real lo decide el permiso
+    // `informes.ver` de la matriz; sin él la página muestra el aviso.
+    path: 'informes',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/informes/informes.component').then(m => m.InformesComponent)
+  },
+  {
     path: 'perfil',
     canActivate: [authGuard],
     loadComponent: () =>
