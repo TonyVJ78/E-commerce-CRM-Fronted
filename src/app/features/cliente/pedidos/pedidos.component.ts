@@ -25,6 +25,8 @@ export class PedidosClienteComponent implements OnInit {
   cargando = true;
   cargandoDetalle = false;
   guardandoResena = false;
+  descargandoRecibo = false;
+  enviandoRecibo = false;
   error = '';
   mensaje = '';
   hoverCalificacion = 0;
@@ -187,6 +189,47 @@ export class PedidosClienteComponent implements OnInit {
             response.error?.error || 'No se pudo guardar la calificación. Intenta de nuevo.';
         },
       });
+  }
+
+  descargarRecibo(pedido: PedidoCliente): void {
+    if (this.descargandoRecibo) return;
+    this.descargandoRecibo = true;
+    this.error = '';
+
+    this.pedidosService.descargarRecibo(pedido.id).subscribe({
+      next: (pdf) => {
+        this.descargandoRecibo = false;
+        // El endpoint exige el token, así que no basta un <a href>: se descarga como blob.
+        const url = URL.createObjectURL(pdf);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = `factura-kantu-${String(pedido.id).padStart(8, '0')}.pdf`;
+        enlace.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.descargandoRecibo = false;
+        this.error = 'No se pudo descargar la factura. Intenta de nuevo.';
+      },
+    });
+  }
+
+  reenviarRecibo(pedido: PedidoCliente): void {
+    if (this.enviandoRecibo) return;
+    this.enviandoRecibo = true;
+    this.error = '';
+    this.mensaje = '';
+
+    this.pedidosService.reenviarRecibo(pedido.id).subscribe({
+      next: (respuesta) => {
+        this.enviandoRecibo = false;
+        this.mensaje = respuesta.mensaje;
+      },
+      error: (response) => {
+        this.enviandoRecibo = false;
+        this.error = response.error?.error || 'No se pudo enviar la factura a tu correo.';
+      },
+    });
   }
 
   etiquetaEstado(estado: string): string {
