@@ -86,13 +86,14 @@ export const routes: Routes = [
   {
     path: 'admin/backups',
     canActivate: [adminGuard],
-    loadComponent: () =>
-      import('./features/admin/backups-admin/backups-admin.component').then(m => m.BackupsAdminComponent)
+    loadComponent: () => import('./features/admin/backups-admin/backups-admin.component').then(m => m.BackupsAdminComponent)
   },
   {
-    path: 'backups',
-    redirectTo: 'admin/backups',
-    pathMatch: 'full'
+    path: 'backups', redirectTo: 'admin/backups', pathMatch: 'full'
+  },
+  {
+    path: 'informes', canActivate: [authGuard],
+    loadComponent: () => import('./features/informes/informes.component').then(m => m.InformesComponent)
   },
   {
     path: 'perfil',
