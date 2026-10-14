@@ -151,6 +151,9 @@
           <div>
             <h4>Pedido realizado con exito</h4>
             <p>Tu orden ha sido registrada. La tienda comenzara a procesarla.</p>
+            @if (reciboEmail) {
+              <p>Te enviamos la factura en PDF a <strong>{{ reciboEmail }}</strong>.</p>
+            }
           </div>
         </div>
       }

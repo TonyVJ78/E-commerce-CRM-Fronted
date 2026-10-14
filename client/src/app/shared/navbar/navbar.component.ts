@@ -5,7 +5,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 import { AuthService } from '../../core/services/auth.service';
-import { CarritoService } from '../../core/services/carrito.service';
+import { CarritoService, CheckoutResponse } from '../../core/services/carrito.service';
 import { ItemCarritoDetalle } from '../../core/models/carrito.model';
 
 export type MetodoPago = 'efectivo' | 'stripe';
@@ -31,6 +31,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   menuOpen = false;
   cartOpen = false;
   checkoutSuccess = false;
+  /** CU-33: correo al que se envió la factura de la última compra (null si no salió). */
+  reciboEmail: string | null = null;
   isCheckingOut = false;
   checkoutError: string | null = null;
 
@@ -223,9 +225,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
 
       this.carritoService.checkout('stripe', paymentIntent.id).subscribe({
-        next: () => {
+        next: (res) => {
           this.pagandoStripe = false;
-          this.mostrarCheckoutExitoso();
+          this.mostrarCheckoutExitoso(res);
         },
         error: (err) => {
           this.pagandoStripe = false;
@@ -244,9 +246,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.checkoutError = null;
 
     this.carritoService.checkout('efectivo').subscribe({
-      next: () => {
+      next: (res) => {
         this.isCheckingOut = false;
-        this.mostrarCheckoutExitoso();
+        this.mostrarCheckoutExitoso(res);
       },
       error: (err) => {
         this.isCheckingOut = false;
@@ -257,14 +259,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
 
-  private mostrarCheckoutExitoso(): void {
+  private mostrarCheckoutExitoso(res: CheckoutResponse): void {
     this.checkoutSuccess = true;
     this.checkoutError = null;
+    this.reciboEmail = res.recibo_enviado ? res.recibo_email ?? null : null;
     this.resetPagoStripe();
+    // Con el aviso de la factura hay más que leer: se deja visible un poco más.
     setTimeout(() => {
       this.setCartOpen(false);
       this.checkoutSuccess = false;
-    }, 2800);
+    }, this.reciboEmail ? 4500 : 2800);
   }
 
   logout(): void {

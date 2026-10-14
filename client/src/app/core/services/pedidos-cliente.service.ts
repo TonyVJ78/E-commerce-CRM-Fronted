@@ -67,4 +67,14 @@ export class PedidosClienteService {
   guardarResena(id: number, resena: GuardarResenaPayload): Observable<ResenaPedido> {
     return this.http.post<ResenaPedido>(`${this.apiUrl}/${id}/resenas/`, resena);
   }
+
+  /** CU-33: factura del pedido en PDF. */
+  descargarRecibo(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/recibo/`, { responseType: 'blob' });
+  }
+
+  /** CU-33: reenvía la factura al correo del cliente. */
+  reenviarRecibo(id: number): Observable<{ mensaje: string; email: string }> {
+    return this.http.post<{ mensaje: string; email: string }>(`${this.apiUrl}/${id}/recibo/enviar/`, {});
+  }
 }

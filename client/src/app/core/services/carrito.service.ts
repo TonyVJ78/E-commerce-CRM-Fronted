@@ -23,6 +23,8 @@ export interface CheckoutResponse {
   pedidos: number[];
   items_comprados?: ItemCompradoInfo[];
   metodo_pago?: string;
+  recibo_enviado?: boolean;
+  recibo_email?: string;
 }
 
 export interface IntentoPagoStripe {

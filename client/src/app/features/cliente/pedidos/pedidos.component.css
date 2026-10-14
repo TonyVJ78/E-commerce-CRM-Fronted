@@ -1108,3 +1108,44 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* CU-33: acciones de la factura */
+.recibo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.btn-recibo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  color: #0d9488;
+  border: 1px solid #cbd5e1;
+  padding: 0.6rem 1.1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-recibo:hover:not(:disabled) {
+  background: #f0fdfa;
+  border-color: #0d9488;
+  color: #0f766e;
+}
+
+.btn-recibo:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .btn-recibo {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
