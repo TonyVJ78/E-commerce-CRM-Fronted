@@ -84,7 +84,27 @@
     </div>
   </div>
 
+  <div class="hablando" *ngIf="hablando">
+    <span class="ondas" aria-hidden="true"><span></span><span></span><span></span></span>
+    Kantu está hablando
+    <button type="button" (click)="callar()">Silenciar</button>
+  </div>
+
   <form class="chat-entrada" (ngSubmit)="enviar()">
+    <button
+      *ngIf="vozDisponible"
+      type="button"
+      class="btn-voz"
+      [class.escuchando]="escuchando"
+      (click)="alternarVoz()"
+      [disabled]="enviando"
+      [attr.aria-label]="escuchando ? 'Dejar de escuchar' : 'Hablar con Kantu'"
+      [title]="escuchando ? 'Dejar de escuchar' : 'Hablar con Kantu'"
+    >
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <textarea
       #entrada
       rows="1"
@@ -92,7 +112,7 @@
       [(ngModel)]="texto"
       (input)="ajustarAltura()"
       (keydown)="alTeclear($event)"
-      placeholder="Escribe qué estás buscando..."
+      [placeholder]="escuchando ? 'Te escucho…' : (vozDisponible ? 'Escribe o habla: qué estás buscando...' : 'Escribe qué estás buscando...')"
       maxlength="2000"
       aria-label="Mensaje para Kantu"
     ></textarea>
@@ -102,6 +122,7 @@
       </svg>
     </button>
   </form>
+  <p class="error-voz" *ngIf="errorVoz" role="alert">{{ errorVoz }}</p>
   <p class="aviso">Kantu puede equivocarse. Revisa la ficha del producto antes de comprar.</p>
 </section>
 
