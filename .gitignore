@@ -26,6 +26,7 @@ server/backups/*.sql
 
 # Node / Angular
 node_modules/
+/.angular/
 client/dist/
 client/.angular/
 client/.cache/

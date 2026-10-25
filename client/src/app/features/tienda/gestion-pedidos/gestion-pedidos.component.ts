@@ -122,6 +122,7 @@ export class GestionPedidosComponent implements OnInit, OnDestroy {
       .listar(this.tiendaSeleccionadaId, { estado: this.filtroEstado, q: this.busqueda })
       .subscribe({
         next: resp => {
+          this.mensajeError = '';
           this.pedidos = resp.pedidos;
           this.conteos = resp.conteos;
           this.totalPedidos = resp.total;
@@ -130,6 +131,8 @@ export class GestionPedidosComponent implements OnInit, OnDestroy {
         error: err => {
           this.mensajeError = this.extraerError(err, 'No se pudieron cargar los pedidos.');
           this.pedidos = [];
+          this.conteos = {};
+          this.totalPedidos = 0;
           this.cargando = false;
         },
       });
