@@ -12,3 +12,5 @@ export * from './backup.model';
 export * from './soporte.model';
 export * from './campana-carrito.model';
 export * from './informe.model';
+
+export * from './segmentacion.model';

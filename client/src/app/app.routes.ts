@@ -150,6 +150,10 @@ export const routes: Routes = [
       import('./features/tienda/dashboard-empresa/dashboard-empresa.component').then(m => m.DashboardEmpresaComponent)
   },
   {
+    path: 'tiendas/clientes/segmentacion', canActivate: [empresaGuard],
+    loadComponent: () => import('./features/tienda/segmentacion-clientes/segmentacion-clientes.component').then(m => m.SegmentacionClientesComponent)
+  },
+  {
     path: '**',
     redirectTo: 'login'
   }
