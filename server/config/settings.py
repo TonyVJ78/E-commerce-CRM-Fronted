@@ -45,8 +45,8 @@ if os.path.isfile(env_file):
 
 
 SECRET_KEY = env('SECRET_KEY', default='kantu-market-django-prod-secret-key-2026-secure')
-DEBUG = env('DEBUG', default=True)
-ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=['*'])
+DEBUG = env.bool('DEBUG', default=True)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 # =============================================================================
 # INSTALLED APPS
@@ -206,17 +206,29 @@ SIMPLE_JWT = {
 }
 
 # =============================================================================
-# CORS
+# CORS & CSRF
 # =============================================================================
 _cors_list = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://localhost:4200',
     'http://127.0.0.1:4200',
+    'https://kantumarket.vercel.app',
 ])
 if '*' in _cors_list:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOWED_ORIGINS = _cors_list
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
+
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'https://*.vercel.app',
+    'https://kantumarket.vercel.app',
+    'http://localhost:4200',
+    'http://127.0.0.1:4200',
+])
 
 # =============================================================================
 # EMAIL (consola para desarrollo, SMTP configurable vía .env)
