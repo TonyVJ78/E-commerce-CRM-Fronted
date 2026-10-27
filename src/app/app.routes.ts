@@ -54,6 +54,17 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   {
+    path: 'cliente/soporte',
+    canActivate: [clienteGuard],
+    loadComponent: () =>
+      import('./features/cliente/soporte/soporte-cliente.component').then(m => m.SoporteClienteComponent)
+  },
+  {
+    path: 'soporte',
+    redirectTo: 'cliente/soporte',
+    pathMatch: 'full'
+  },
+  {
     path: 'producto/:id',
     loadComponent: () =>
       import('./features/producto/detalle-producto/detalle-producto.component').then(
@@ -78,6 +89,17 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () =>
       import('./features/admin/accesos/accesos.component').then(m => m.AccesosComponent)
+  },
+  {
+    path: 'admin/backups',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/admin/backups-admin/backups-admin.component').then(m => m.BackupsAdminComponent)
+  },
+  {
+    path: 'backups',
+    redirectTo: 'admin/backups',
+    pathMatch: 'full'
   },
   {
     // Informes con IA (CU-34): el acceso real lo decide el permiso
@@ -116,6 +138,24 @@ export const routes: Routes = [
     canActivate: [empresaGuard],
     loadComponent: () =>
       import('./features/tienda/identidad-marca/identidad-marca.component').then(m => m.IdentidadMarcaComponent)
+  },
+  {
+    path: 'tiendas/tickets',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/tickets-soporte/tickets-tienda.component').then(m => m.TicketsTiendaComponent)
+  },
+  {
+    path: 'tiendas/campana-carrito',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/campana-carrito/campana-carrito.component').then(m => m.CampanaCarritoComponent)
+  },
+  {
+    path: 'tiendas/clientes/segmentacion',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/segmentacion-clientes/segmentacion-clientes.component').then(m => m.SegmentacionClientesComponent)
   },
   {
     path: 'tiendas/:tiendaId/productos/nuevo',
