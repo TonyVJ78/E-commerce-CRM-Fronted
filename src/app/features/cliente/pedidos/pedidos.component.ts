@@ -140,8 +140,7 @@ export class PedidosClienteComponent implements OnInit {
   }
 
   puedeCalificar(pedido: PedidoCliente): boolean {
-    const estadosPermitidos = ['completado', 'completada', 'entregado', 'finalizado', 'completed'];
-    return estadosPermitidos.includes((pedido.estado || '').trim().toLowerCase());
+    return (pedido.estado || '').trim().toLowerCase() === 'entregado';
   }
 
   setCalificacion(estrellas: number): void {
@@ -179,10 +178,9 @@ export class PedidosClienteComponent implements OnInit {
       .subscribe({
         next: () => {
           this.guardandoResena = false;
-          this.mensaje = '¡Tu calificación fue registrada exitosamente!';
-          this.resenaForm.patchValue({ comentario: '' });
-          // Recargar el detalle del pedido para visualizar la reseña inmediatamente
+          // abrirPedido limpia el mensaje al empezar: el aviso va después de recargar.
           this.abrirPedido(this.seleccionado!.id, false);
+          this.mensaje = '¡Tu calificación fue registrada exitosamente!';
         },
         error: (response) => {
           this.guardandoResena = false;
