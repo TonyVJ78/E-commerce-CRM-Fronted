@@ -62,6 +62,7 @@
           <a routerLink="/tiendas/tickets" routerLinkActive="active" (click)="menuOpen = false">Atencion al Cliente</a>
           <a routerLink="/tiendas/campana-carrito" routerLinkActive="active" (click)="menuOpen = false">Recuperacion Carrito</a>
           <a routerLink="/tiendas/clientes/segmentacion" routerLinkActive="active" (click)="menuOpen = false">Segmentación de Clientes</a>
+          <a routerLink="/tiendas/gastos" routerLinkActive="active" (click)="menuOpen = false">Gastos</a>
           <a routerLink="/tiendas/identidad" routerLinkActive="active" (click)="menuOpen = false">Identidad de Marca</a>
           <a routerLink="/informes" routerLinkActive="active" (click)="menuOpen = false">Informes IA</a>
         }
@@ -81,6 +82,24 @@
               <line x1="10" y1="14" x2="21" y2="3"></line>
             </svg>
           </a>
+        }
+
+        <!-- Selector de moneda: USD solo si hay cotizacion oficial -->
+        @if (puedeComprar()) {
+          <div class="moneda-selector" role="group" aria-label="Moneda de los precios">
+            <button
+              type="button"
+              [class.active]="!monedaService.mostrarUsd()"
+              [attr.aria-pressed]="!monedaService.mostrarUsd()"
+              (click)="monedaService.elegir('BOB')">Bs</button>
+            <button
+              type="button"
+              [class.active]="monedaService.mostrarUsd()"
+              [attr.aria-pressed]="monedaService.mostrarUsd()"
+              [disabled]="!monedaService.usdDisponible()"
+              [title]="monedaService.usdDisponible() ? 'Ver precios en dolares' : 'Sin cotizacion disponible'"
+              (click)="monedaService.elegir('USD')">USD</button>
+          </div>
         }
 
         <!-- Boton de Carrito (Desktop - cualquier usuario autenticado) -->
@@ -185,7 +204,7 @@
                 <div class="cart-store-group">
                   <div class="cart-store-header">
                     <strong>{{ tiendaCart.tienda_nombre }}</strong>
-                    <span class="store-subtotal">Subtotal: Bs {{ tiendaCart.total }}</span>
+                    <span class="store-subtotal">Subtotal: <app-precio [bs]="tiendaCart.total" /></span>
                   </div>
 
                   <div class="cart-items-list">
@@ -202,7 +221,7 @@
                           @if (item.variante_nombre) {
                             <p class="item-variant">Variante: <span>{{ item.variante_nombre }}</span></p>
                           }
-                          <div class="item-price">Bs {{ item.precio_unitario }} c/u</div>
+                          <div class="item-price"><app-precio [bs]="item.precio_unitario" /> c/u</div>
 
                           <div class="item-actions-row">
                             <div class="quantity-picker">
@@ -211,7 +230,7 @@
                               <button type="button" class="btn-qty" (click)="incrementar(item)" title="Aumentar" aria-label="Aumentar cantidad">+</button>
                             </div>
 
-                            <div class="item-subtotal">Bs {{ item.subtotal }}</div>
+                            <div class="item-subtotal"><app-precio [bs]="item.subtotal" /></div>
 
                             <button type="button" class="btn-remove-item" (click)="eliminar(item.id)" title="Eliminar del carrito" aria-label="Eliminar producto">
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -237,7 +256,7 @@
             </div>
             <div class="total-row grand-total">
               <span>Total a pagar:</span>
-              <span class="grand-total-amount">Bs {{ cart.total_global }}</span>
+              <span class="grand-total-amount"><app-precio [bs]="cart.total_global" /></span>
             </div>
 
             @if (checkoutError) {

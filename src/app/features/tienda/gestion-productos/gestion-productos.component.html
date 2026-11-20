@@ -183,6 +183,19 @@
                 </div>
               </div>
 
+              <div class="field-item">
+                <label class="field-label">Costo Unitario (Bs.) <span class="optional-tag">opcional</span></label>
+                <div class="price-input-wrapper">
+                  <span class="price-prefix">Bs.</span>
+                  <input type="number" step="0.01" min="0" class="field-input price-input" formControlName="costo_unitario" placeholder="0.00">
+                </div>
+                @if (margenEdicion; as margen) {
+                  <small class="margen-hint" [class.margen-negativo]="margen.ganancia < 0">
+                    Margen: Bs. {{ margen.ganancia | number:'1.2-2' }} ({{ margen.porcentaje | number:'1.0-1' }}%)
+                  </small>
+                }
+              </div>
+
               <div class="field-item full-width">
                 <label class="field-label">Categoria</label>
                 <input type="text" class="field-input" formControlName="categoria" placeholder="Escribe o selecciona una categoria..." list="listaCategorias">
@@ -255,6 +268,16 @@
                   {{ variante.stock }}
                 </span>
               </div>
+              <div class="summary-metric">
+                <span class="metric-title">Costo unitario</span>
+                <span class="metric-value">{{ variante.costo_unitario !== null ? ('Bs. ' + (variante.costo_unitario | number:'1.2-2')) : 'Sin costo' }}</span>
+              </div>
+              @if (margenVarianteInventario; as margen) {
+                <div class="summary-metric">
+                  <span class="metric-title">Margen</span>
+                  <span class="metric-value" [class.text-danger]="margen.ganancia < 0">{{ margen.porcentaje | number:'1.0-1' }}%</span>
+                </div>
+              }
               <div class="summary-metric">
                 <span class="metric-title">Stock Minimo</span>
                 <span class="metric-value">{{ variante.stock_minimo || 5 }} uds.</span>

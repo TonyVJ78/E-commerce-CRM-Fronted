@@ -7,19 +7,22 @@ import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@strip
 import { AuthService } from '../../core/services/auth.service';
 import { CarritoService, CheckoutResponse } from '../../core/services/carrito.service';
 import { ItemCarritoDetalle } from '../../core/models/carrito.model';
+import { MonedaService } from '../../core/services/moneda.service';
+import { PrecioComponent } from '../precio/precio.component';
 
 export type MetodoPago = 'efectivo' | 'stripe';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, PrecioComponent],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent implements OnInit, OnDestroy {
   public readonly authService = inject(AuthService);
   public readonly carritoService = inject(CarritoService);
+  public readonly monedaService = inject(MonedaService);
 
   readonly currentUser = toSignal(this.authService.currentUser$, { initialValue: this.authService.currentUser });
   readonly cartData = toSignal(this.carritoService.cartData$, { initialValue: null });

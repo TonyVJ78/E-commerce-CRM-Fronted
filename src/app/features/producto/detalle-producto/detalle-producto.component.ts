@@ -6,6 +6,7 @@ import { Subscription, catchError, of, switchMap } from 'rxjs';
 import { ProductoCatalogo, VarianteCatalogo } from '../../../core/models';
 import { CarritoService } from '../../../core/services/carrito.service';
 import { CatalogoService } from '../../../core/services/catalogo.service';
+import { PrecioComponent } from '../../../shared/precio/precio.component';
 
 const IMAGEN_RESPALDO =
   'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=900&q=80';
@@ -19,7 +20,7 @@ const IMAGEN_RESPALDO =
 @Component({
   selector: 'app-detalle-producto',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PrecioComponent],
   templateUrl: './detalle-producto.component.html',
   styleUrls: ['./detalle-producto.component.css']
 })

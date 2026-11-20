@@ -23,7 +23,7 @@ describe('GestionProductosComponent stock management', () => {
     component = fixture.componentInstance;
   });
   it('rejects invalid, zero, and negative-result adjustments', () => {
-    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] });
+    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, costo_unitario: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] });
     component.seleccionarVariante(4);
     component.deltaStock = -3; component.motivoStock = 'Conteo';
     expect(component.ajusteStockValido).toBeFalse();
@@ -34,7 +34,7 @@ describe('GestionProductosComponent stock management', () => {
   it('guards duplicate submits and modal/variant changes until the submitted adjustment settles', () => {
     const response = new Subject<any>();
     producto.ajustarStock.and.returnValue(response);
-    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }, { id: 5, sku: 'B', nombre: 'B', precio: 1, precio_oferta: null, stock: 8, stock_minimo: 0, atributos: {}, activa: true }] });
+    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, costo_unitario: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }, { id: 5, sku: 'B', nombre: 'B', precio: 1, precio_oferta: null, costo_unitario: null, stock: 8, stock_minimo: 0, atributos: {}, activa: true }] });
     component.seleccionarVariante(4); component.deltaStock = 1; component.motivoStock = 'Conteo';
     component.guardarAjusteStock();
     component.guardarAjusteStock();
@@ -51,7 +51,7 @@ describe('GestionProductosComponent stock management', () => {
     const first = new Subject<any[]>();
     const second = new Subject<any[]>();
     producto.listarMovimientosStock.and.returnValues(first, second);
-    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }, { id: 5, sku: 'B', nombre: 'B', precio: 1, precio_oferta: null, stock: 8, stock_minimo: 0, atributos: {}, activa: true }] });
+    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, costo_unitario: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }, { id: 5, sku: 'B', nombre: 'B', precio: 1, precio_oferta: null, costo_unitario: null, stock: 8, stock_minimo: 0, atributos: {}, activa: true }] });
     component.seleccionarVariante(4); component.seleccionarVariante(5);
     first.next([{ id: 1 } as any]);
     expect(component.movimientosStock).toEqual([]);
@@ -60,7 +60,7 @@ describe('GestionProductosComponent stock management', () => {
     const stale = new Subject<any[]>();
     producto.listarMovimientosStock.and.returnValue(stale);
     component.seleccionarVariante(4); component.cerrarInventario();
-    component.abrirInventario({ id: 9, tienda: 2, nombre: 'Otro', slug: 'otro', variantes: [{ id: 4, sku: 'C', nombre: 'C', precio: 1, precio_oferta: null, stock: 1, stock_minimo: 0, atributos: {}, activa: true }] });
+    component.abrirInventario({ id: 9, tienda: 2, nombre: 'Otro', slug: 'otro', variantes: [{ id: 4, sku: 'C', nombre: 'C', precio: 1, precio_oferta: null, costo_unitario: null, stock: 1, stock_minimo: 0, atributos: {}, activa: true }] });
     stale.next([{ id: 3 } as any]);
     expect(component.movimientosStock).toEqual([]);
   });
@@ -71,7 +71,7 @@ describe('GestionProductosComponent stock management', () => {
     producto.ajustarStock.and.returnValue(save);
     producto.listarMovimientosStock.and.returnValue(history);
     producto.listar.and.returnValue(new Subject<any[]>());
-    component.productos = [{ id: 1, tienda: 2, nombre: 'P', slug: 'p', stock: 2, variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] }];
+    component.productos = [{ id: 1, tienda: 2, nombre: 'P', slug: 'p', stock: 2, variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, costo_unitario: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] }];
     component.abrirInventario(component.productos[0]); component.seleccionarVariante(4);
     component.deltaStock = 1; component.motivoStock = 'Conteo'; component.guardarAjusteStock();
     component.cerrarInventario();
@@ -88,7 +88,7 @@ describe('GestionProductosComponent stock management', () => {
     producto.ajustarStock.and.returnValue(save);
     producto.listar.and.returnValue(new Subject<any[]>());
     producto.listarMovimientosStock.and.returnValues(...histories);
-    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] });
+    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, costo_unitario: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] });
     component.seleccionarVariante(4);
     histories[0].next([]);
     component.deltaStock = 1; component.motivoStock = 'Conteo'; component.guardarAjusteStock();
@@ -102,7 +102,7 @@ describe('GestionProductosComponent stock management', () => {
   it('does not send stock through product PATCH and preserves server errors', () => {
     expect(component.editForm.contains('stock')).toBeFalse();
     producto.ajustarStock.and.returnValue(throwError(() => ({ status: 400, error: { detail: 'Stock insuficiente' } })));
-    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] });
+    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, costo_unitario: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] });
     component.seleccionarVariante(4); component.deltaStock = -1; component.motivoStock = 'Conteo';
     component.guardarAjusteStock();
     expect(producto.ajustarStock).toHaveBeenCalledWith(2, 4, { delta: -1, reason: 'Conteo', tipo_ajuste: 'CORRECCION' });
@@ -110,7 +110,7 @@ describe('GestionProductosComponent stock management', () => {
   });
 
   it('supports absolute stock mode calculation and quick reasons', () => {
-    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, stock: 10, stock_minimo: 5, atributos: {}, activa: true }] });
+    component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_oferta: null, costo_unitario: null, stock: 10, stock_minimo: 5, atributos: {}, activa: true }] });
     component.seleccionarVariante(4);
     component.modoAjuste = 'absoluto';
     component.nuevoStockAbsoluto = 25;

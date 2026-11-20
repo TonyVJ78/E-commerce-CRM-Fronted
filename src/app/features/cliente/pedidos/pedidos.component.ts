@@ -6,11 +6,12 @@ import {
   PedidoCliente,
   PedidosClienteService,
 } from '../../../core/services/pedidos-cliente.service';
+import { PrecioComponent } from '../../../shared/precio/precio.component';
 
 @Component({
   selector: 'app-pedidos-cliente',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, PrecioComponent],
   templateUrl: './pedidos.component.html',
   styleUrls: ['./pedidos.component.css'],
 })

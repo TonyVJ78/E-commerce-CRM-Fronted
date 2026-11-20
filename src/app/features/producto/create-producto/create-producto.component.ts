@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 
+import { MargenProducto, calcularMargen } from '../../../core/models/producto.model';
 import { Categoria, ProductoService } from '../../../core/services/producto.service';
 import { Tienda, TiendaService } from '../../../core/services/tienda.service';
 
@@ -37,7 +38,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
   private routeSubscription?: Subscription;
 
   /** Campos de la variante "única"; solo aplican cuando el producto NO tiene opciones. */
-  private readonly simpleVariantControls = ['codigo', 'precio', 'precio_oferta', 'stock', 'stock_minimo'];
+  private readonly simpleVariantControls = ['codigo', 'precio', 'precio_oferta', 'costo_unitario', 'stock', 'stock_minimo'];
 
   readonly acceptedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
   readonly maxImageSize = 5 * 1024 * 1024;
@@ -59,6 +60,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
       codigo: ['', [Validators.required, Validators.maxLength(60)]],
       precio: [null, [Validators.required, Validators.min(0)]],
       precio_oferta: [null, Validators.min(0)],
+      costo_unitario: [null, Validators.min(0)],
       stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
       stock_minimo: [5, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
       variantes: this.fb.array([])
@@ -118,6 +120,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
       sku: ['', [Validators.required, Validators.maxLength(60)]],
       precio: [null, [Validators.required, Validators.min(0)]],
       precio_oferta: [null, Validators.min(0)],
+      costo_unitario: [null, Validators.min(0)],
       stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
       stock_minimo: [5, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
       activa: [true],
@@ -216,6 +219,10 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     this.duplicateSku = new Set(skus).size !== skus.length;
   }
 
+  margen(control: AbstractControl): MargenProducto | null {
+    return calcularMargen(control.get('precio')?.value, control.get('costo_unitario')?.value);
+  }
+
   variantStatus(index: number): string {
     const variant = this.variants.at(index);
     if (!variant.get('activa')?.value || Number(variant.get('stock')?.value) === 0) return 'Agotado';
@@ -273,6 +280,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
         nombre: 'Unica',
         precio: String(value.precio),
         precio_oferta: value.precio_oferta === null || value.precio_oferta === '' ? null : String(value.precio_oferta),
+        costo_unitario: value.costo_unitario === null || value.costo_unitario === '' ? null : String(value.costo_unitario),
         stock: Number(value.stock),
         stock_minimo: Number(value.stock_minimo),
         atributos: {},
@@ -296,6 +304,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
       nombre: String(value.nombre).trim(),
       precio: String(value.precio),
       precio_oferta: value.precio_oferta === null || value.precio_oferta === '' ? null : String(value.precio_oferta),
+      costo_unitario: value.costo_unitario === null || value.costo_unitario === '' ? null : String(value.costo_unitario),
       stock: Number(value.stock),
       stock_minimo: Number(value.stock_minimo),
       atributos: attributes,
@@ -311,7 +320,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     this.setSimpleVariantEnabled(true);
     this.productForm.reset({
       nombre: '', descripcion: '', categoria_id: null, etiquetas: '', activo: true,
-      tieneOpciones: false, codigo: '', precio: null, precio_oferta: null,
+      tieneOpciones: false, codigo: '', precio: null, precio_oferta: null, costo_unitario: null,
       stock: 0, stock_minimo: 5
     });
   }

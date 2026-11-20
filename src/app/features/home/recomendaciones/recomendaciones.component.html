@@ -20,7 +20,7 @@
       <div class="recommendation-copy">
         <small>{{ producto.categoria_nombre || producto.tienda_nombre }}</small>
         <strong>{{ producto.nombre }}</strong>
-        <span>Bs {{ producto.precio_base || '0.00' }}</span>
+        <span><app-precio [bs]="producto.precio_base || '0.00'" /></span>
         <em>Ver producto →</em>
       </div>
     </button>

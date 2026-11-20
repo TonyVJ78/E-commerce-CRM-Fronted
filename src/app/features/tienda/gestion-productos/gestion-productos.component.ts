@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import { ProductoService } from '../../../core/services/producto.service';
 import { TiendaService } from '../../../core/services/tienda.service';
 import { CarritoService } from '../../../core/services/carrito.service';
-import { Producto, Tienda, VarianteProducto } from '../../../core/models';
+import { MargenProducto, Producto, Tienda, VarianteProducto, calcularMargen } from '../../../core/models';
 import { MovimientoStock } from '../../../core/services/producto.service';
 
 @Component({
@@ -63,6 +63,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   editForm: FormGroup = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(200)]],
     precio: [0, [Validators.required, Validators.min(0.01)]],
+    costo_unitario: [null as number | null, Validators.min(0)],
     categoria: [''],
     imagen_url: [''],
     descripcion: ['']
@@ -123,6 +124,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
             tienda: tiendaId,
             tienda_nombre: tiendaNombre || `Tienda ${tiendaId}`,
             precio: mainVariant ? Number(mainVariant.precio) : (p.precio ? Number(p.precio) : 0),
+            costo_unitario: mainVariant?.costo_unitario ?? null,
             stock: p.stock_total !== undefined ? p.stock_total : (mainVariant ? mainVariant.stock : (p.stock || 0)),
             imagen_url: firstImg
           };
@@ -170,10 +172,20 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
     this.editForm.patchValue({
       nombre: producto.nombre,
       precio: producto.precio,
+      costo_unitario: producto.costo_unitario === null || producto.costo_unitario === undefined ? null : Number(producto.costo_unitario),
       categoria: producto.categoria || '',
       imagen_url: currentImg || '',
       descripcion: producto.descripcion || ''
     });
+  }
+
+  get margenEdicion(): MargenProducto | null {
+    return calcularMargen(this.editForm.value.precio, this.editForm.value.costo_unitario);
+  }
+
+  get margenVarianteInventario(): MargenProducto | null {
+    const variante = this.varianteInventario;
+    return variante ? calcularMargen(variante.precio, variante.costo_unitario) : null;
   }
 
   cancelarEdicion(): void {
@@ -296,6 +308,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
             ...prodActualizado,
             nombre: datosModificados.nombre,
             precio: datosModificados.precio,
+            costo_unitario: datosModificados.costo_unitario,
             descripcion: datosModificados.descripcion,
             categoria: datosModificados.categoria,
             imagen_url: nuevaImg,

@@ -4,11 +4,12 @@ import { Subscription } from 'rxjs';
 
 import { ProductoCatalogo } from '../../../core/models/catalogo.model';
 import { RecomendacionService } from '../../../core/services/recomendacion.service';
+import { PrecioComponent } from '../../../shared/precio/precio.component';
 
 @Component({
   selector: 'app-recomendaciones',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PrecioComponent],
   templateUrl: './recomendaciones.component.html',
   styleUrls: ['./recomendaciones.component.css']
 })

@@ -1337,3 +1337,19 @@
   .stock-variant-summary { grid-template-columns: 1fr; gap: 0.5rem; }
   .stepper-buttons { display: none; }
 }
+.margen-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.margen-hint.margen-negativo {
+  color: var(--danger);
+}
+
+.optional-tag {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: none;
+}

@@ -795,3 +795,31 @@
   }
 }
 
+
+.moneda-selector {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.moneda-selector button {
+  padding: 0.3rem 0.7rem;
+  border: 0;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.moneda-selector button.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.moneda-selector button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

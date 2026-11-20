@@ -1,0 +1,182 @@
+<div class="layout gastos-page">
+  <header class="page-head">
+    <div class="head-titles">
+      <nav class="breadcrumb-nav" aria-label="Migas de pan">
+        <a routerLink="/panel-vendedor" class="breadcrumb-link">Panel Vendedor</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Gastos</span>
+      </nav>
+      <h1>Gastos operativos</h1>
+      <p>Registra alquiler, sueldos, servicios y demás gastos de tu tienda para calcular la ganancia neta.</p>
+    </div>
+
+    @if (tiendas().length > 1) {
+      <div class="store-picker">
+        <label for="tiendaGastos" class="store-label">Tienda</label>
+        <select
+          id="tiendaGastos"
+          class="input"
+          [value]="tiendaId()"
+          (change)="seleccionarTienda(+$any($event.target).value)"
+        >
+          @for (t of tiendas(); track t.id) {
+            <option [value]="t.id">{{ t.nombre }}</option>
+          }
+        </select>
+      </div>
+    }
+  </header>
+
+  @if (mensajeExito()) {
+    <div class="alert alert--success" role="status">
+      <span>{{ mensajeExito() }}</span>
+    </div>
+  }
+  @if (mensajeError()) {
+    <div class="alert alert--danger" role="alert">
+      <span>{{ mensajeError() }}</span>
+    </div>
+  }
+
+  @if (tiendaId() === null && !cargando()) {
+    <section class="card">
+      <div class="card__body empty">
+        <h3>Aún no tienes tiendas</h3>
+        <p>Crea una tienda para registrar sus gastos.</p>
+        <a routerLink="/tiendas" class="btn btn--primary">Ir a Mis Tiendas</a>
+      </div>
+    </section>
+  } @else {
+    <div class="gastos-grid">
+      <section class="card">
+        <header class="card__header">
+          <h2 class="card__title">{{ editandoId() === null ? 'Nuevo gasto' : 'Editar gasto' }}</h2>
+        </header>
+        <form class="card__body gasto-form" [formGroup]="form" (ngSubmit)="guardar()">
+          <div class="field">
+            <label for="gCategoria">Categoría</label>
+            <select id="gCategoria" class="input" formControlName="categoria">
+              @for (c of categorias; track c.valor) {
+                <option [value]="c.valor">{{ c.etiqueta }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="gMonto">Monto (Bs)</label>
+            <input id="gMonto" class="input" type="number" min="0.01" step="0.01" inputmode="decimal"
+                   formControlName="monto" placeholder="0.00">
+          </div>
+          <div class="field">
+            <label for="gFecha">Fecha</label>
+            <input id="gFecha" class="input" type="date" formControlName="fecha">
+          </div>
+          <div class="field">
+            <label for="gDescripcion">Descripción</label>
+            <input id="gDescripcion" class="input" type="text" maxlength="200"
+                   formControlName="descripcion" placeholder="Ej. Alquiler del local de noviembre">
+          </div>
+          <div class="form-actions">
+            @if (editandoId() !== null) {
+              <button type="button" class="btn btn--outline" (click)="cancelarEdicion()">Cancelar</button>
+            }
+            <button type="submit" class="btn btn--primary" [disabled]="form.invalid || guardando()">
+              {{ guardando() ? 'Guardando...' : (editandoId() === null ? 'Registrar gasto' : 'Guardar cambios') }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <header class="card__header">
+          <h2 class="card__title">Totales</h2>
+        </header>
+        <div class="card__body">
+          @if (totales(); as t) {
+            <div class="total-general">
+              <span class="total-label">Total del periodo</span>
+              <strong class="total-valor">Bs {{ t.total }}</strong>
+            </div>
+
+            @if (t.por_categoria.length > 0) {
+              <h3 class="subtitulo">Por categoría</h3>
+              <ul class="resumen">
+                @for (c of t.por_categoria; track c.categoria) {
+                  <li><span>{{ c.etiqueta }}</span><strong>Bs {{ c.total }}</strong></li>
+                }
+              </ul>
+
+              <h3 class="subtitulo">Por mes</h3>
+              <ul class="resumen">
+                @for (m of t.por_mes; track m.mes) {
+                  <li class="mes-fila">
+                    <span class="mes-nombre">{{ m.mes + '-01' | date: 'MMM y' }}</span>
+                    <span class="mes-barra" aria-hidden="true">
+                      <span class="mes-relleno" [style.width.%]="porcentajeMes(m.total)"></span>
+                    </span>
+                    <strong>Bs {{ m.total }}</strong>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="vacio">Sin gastos en este periodo.</p>
+            }
+          }
+        </div>
+      </section>
+    </div>
+
+    <section class="card lista-card">
+      <header class="card__header filtros-header">
+        <h2 class="card__title">Gastos registrados</h2>
+        <div class="filtros">
+          <div class="filtro">
+            <label for="fDesde">Desde</label>
+            <input id="fDesde" class="input" type="date" [value]="filtros().desde"
+                   (change)="cambiarFiltro('desde', $any($event.target).value)">
+          </div>
+          <div class="filtro">
+            <label for="fHasta">Hasta</label>
+            <input id="fHasta" class="input" type="date" [value]="filtros().hasta"
+                   (change)="cambiarFiltro('hasta', $any($event.target).value)">
+          </div>
+          <div class="filtro">
+            <label for="fCategoria">Categoría</label>
+            <select id="fCategoria" class="input" [value]="filtros().categoria"
+                    (change)="cambiarFiltro('categoria', $any($event.target).value)">
+              <option value="">Todas</option>
+              @for (c of categorias; track c.valor) {
+                <option [value]="c.valor">{{ c.etiqueta }}</option>
+              }
+            </select>
+          </div>
+          <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar</button>
+        </div>
+      </header>
+
+      <div class="card__body">
+        @if (cargando()) {
+          <p class="vacio">Cargando gastos...</p>
+        } @else if (gastos().length === 0) {
+          <p class="vacio">No hay gastos que coincidan con los filtros.</p>
+        } @else {
+          <ul class="gastos-lista">
+            @for (g of gastos(); track g.id) {
+              <li class="gasto-item">
+                <div class="gasto-info">
+                  <span class="badge badge--neutral">{{ g.categoria_etiqueta }}</span>
+                  <span class="gasto-descripcion">{{ g.descripcion || 'Sin descripción' }}</span>
+                  <time class="gasto-fecha">{{ g.fecha | date: 'dd/MM/yyyy' }}</time>
+                </div>
+                <strong class="gasto-monto">Bs {{ g.monto }}</strong>
+                <div class="gasto-acciones">
+                  <button type="button" class="btn btn--outline" (click)="editar(g)">Editar</button>
+                  <button type="button" class="btn btn--ghost btn-eliminar" (click)="eliminar(g)">Eliminar</button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  }
+</div>

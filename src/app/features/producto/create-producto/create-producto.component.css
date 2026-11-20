@@ -89,3 +89,12 @@
   .submit-button { width: 100%; }
   .cancel-link { text-align: center; }
 }
+
+.margen {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.margen-negativo {
+  color: var(--danger);
+}

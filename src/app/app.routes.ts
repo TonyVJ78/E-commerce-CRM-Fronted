@@ -134,6 +134,12 @@ export const routes: Routes = [
       import('./features/tienda/gestion-pedidos/gestion-pedidos.component').then(m => m.GestionPedidosComponent)
   },
   {
+    path: 'tiendas/gastos',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/gastos/gastos.component').then(m => m.GastosComponent)
+  },
+  {
     path: 'tiendas/identidad',
     canActivate: [empresaGuard],
     loadComponent: () =>

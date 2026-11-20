@@ -38,6 +38,8 @@ export interface PedidoCliente {
   estado: string;
   subtotal: string;
   total: string;
+  /** Bs por USD vigentes al comprar; null si no había cotización guardada. */
+  tipo_cambio_usd: string | null;
   fecha: string | null;
   items: PedidoClienteItem[];
   historial?: HistorialPedido[];

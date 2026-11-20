@@ -13,11 +13,12 @@ import { CatalogoService, FiltrosCatalogo } from '../../core/services/catalogo.s
 import { CarritoService } from '../../core/services/carrito.service';
 import { RecomendacionService } from '../../core/services/recomendacion.service';
 import { RecomendacionesComponent } from './recomendaciones/recomendaciones.component';
+import { PrecioComponent } from '../../shared/precio/precio.component';
 
 @Component({
   selector: 'app-home-cliente',
   standalone: true,
-  imports: [CommonModule, FormsModule, RecomendacionesComponent],
+  imports: [CommonModule, FormsModule, RecomendacionesComponent, PrecioComponent],
   templateUrl: './home-cliente.component.html',
   styleUrls: ['./home-cliente.component.css']
 })

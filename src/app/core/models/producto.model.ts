@@ -10,10 +10,29 @@ export interface VarianteProducto {
   nombre: string;
   precio: string | number;
   precio_oferta: string | number | null;
+  /** Solo lo devuelve la API de empresa; nunca la del catálogo público. */
+  costo_unitario: string | number | null;
   stock: number;
   stock_minimo: number;
   atributos: Record<string, string>;
   activa: boolean;
+}
+
+export interface MargenProducto {
+  ganancia: number;
+  porcentaje: number;
+}
+
+/** Margen sobre el precio de venta; null si falta el costo o el precio no es positivo. */
+export function calcularMargen(
+  precio: string | number | null | undefined,
+  costo: string | number | null | undefined
+): MargenProducto | null {
+  if (costo === null || costo === undefined || costo === '') return null;
+  const venta = Number(precio);
+  const unitario = Number(costo);
+  if (!(venta > 0) || Number.isNaN(unitario)) return null;
+  return { ganancia: venta - unitario, porcentaje: ((venta - unitario) / venta) * 100 };
 }
 
 export interface ProductoImagen {
@@ -42,6 +61,7 @@ export interface Producto {
   en_stock?: boolean;
   // Campos de conveniencia basados en variante principal:
   precio?: number | string;
+  costo_unitario?: number | string | null;
   stock?: number;
 }
 
@@ -50,6 +70,7 @@ export interface CrearVariantePayload {
   nombre?: string;
   precio: number;
   precio_oferta?: number | null;
+  costo_unitario?: number | null;
   stock: number;
   stock_minimo?: number;
   atributos?: Record<string, string>;

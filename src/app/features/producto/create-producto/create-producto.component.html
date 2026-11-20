@@ -106,6 +106,13 @@
           <div class="field"><label for="simple-sku">Código / SKU <span>*</span></label><input id="simple-sku" formControlName="codigo" placeholder="PROD-001" (input)="checkDuplicateSkus()" /></div>
           <div class="field"><label for="simple-price">Precio <span>*</span></label><input id="simple-price" type="number" min="0" step="0.01" formControlName="precio" placeholder="0.00" /></div>
           <div class="field"><label for="simple-offer">Precio oferta <em>opcional</em></label><input id="simple-offer" type="number" min="0" step="0.01" formControlName="precio_oferta" placeholder="0.00" /></div>
+          <div class="field">
+            <label for="simple-cost">Costo unitario <em>opcional</em></label>
+            <input id="simple-cost" type="number" min="0" step="0.01" formControlName="costo_unitario" placeholder="0.00" />
+            @if (margen(productForm); as m) {
+              <small class="margen" [class.margen-negativo]="m.ganancia < 0">Margen: Bs {{ m.ganancia | number: '1.2-2' }} ({{ m.porcentaje | number: '1.0-1' }}%)</small>
+            }
+          </div>
           <div class="field"><label for="simple-stock">Stock inicial <span>*</span></label><input id="simple-stock" type="number" min="0" step="1" formControlName="stock" /></div>
           <div class="field"><label for="simple-min-stock">Stock mínimo <span>*</span></label><input id="simple-min-stock" type="number" min="0" step="1" formControlName="stock_minimo" /></div>
         </div>
@@ -122,6 +129,13 @@
             <div class="field"><label>SKU <span>*</span></label><input formControlName="sku" placeholder="POL-RO-M" (input)="checkDuplicateSkus()" /></div>
             <div class="field"><label>Precio <span>*</span></label><input type="number" min="0" step="0.01" formControlName="precio" placeholder="0.00" /></div>
             <div class="field"><label>Oferta <em>opcional</em></label><input type="number" min="0" step="0.01" formControlName="precio_oferta" placeholder="0.00" /></div>
+            <div class="field">
+              <label>Costo unitario <em>opcional</em></label>
+              <input type="number" min="0" step="0.01" formControlName="costo_unitario" placeholder="0.00" />
+              @if (margen(variant); as m) {
+                <small class="margen" [class.margen-negativo]="m.ganancia < 0">Margen: Bs {{ m.ganancia | number: '1.2-2' }} ({{ m.porcentaje | number: '1.0-1' }}%)</small>
+              }
+            </div>
             <div class="field"><label>Stock <span>*</span></label><input type="number" min="0" step="1" formControlName="stock" /></div>
             <div class="field"><label>Stock mínimo <span>*</span></label><input type="number" min="0" step="1" formControlName="stock_minimo" /></div>
             <label class="variant-active"><input type="checkbox" formControlName="activa" /> Variante activa</label>
