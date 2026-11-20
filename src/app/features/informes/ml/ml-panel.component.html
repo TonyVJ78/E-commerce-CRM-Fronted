@@ -1,0 +1,336 @@
+<ng-template #ficha let-modelo="modelo" let-metricas="metricas">
+  <section class="ficha" [attr.aria-label]="'Ficha técnica: ' + modelo.titulo">
+    <header class="ficha-cabecera">
+      <h3>Ficha técnica</h3>
+      <dl class="ficha-datos">
+        <div>
+          <dt>Algoritmo</dt>
+          <dd class="mono">{{ modelo.algoritmo }}</dd>
+        </div>
+        <div>
+          <dt>Filas de entrenamiento</dt>
+          <dd class="mono">{{ formatoEntero(modelo.filas_entrenamiento) }}</dd>
+        </div>
+        <div>
+          <dt>Entrenado</dt>
+          <dd class="mono">{{ fechaHora(modelo.entrenado_en) }}</dd>
+        </div>
+      </dl>
+    </header>
+    <p class="ficha-explicacion">{{ modelo.explicacion }}</p>
+
+    <ul class="metricas">
+      @for (m of metricas; track m.etiqueta) {
+        <li class="metrica">
+          <p class="metrica-valor">{{ m.valor }}</p>
+          <h4 class="metrica-etiqueta">{{ m.etiqueta }}</h4>
+          <p class="metrica-texto">{{ m.explicacion }}</p>
+          @if (m.comparacion; as c) {
+            <div class="duelo" role="group" [attr.aria-label]="'Modelo contra ' + c.etiquetaBase">
+              <div class="duelo-fila" [class.gana]="c.gana === 'modelo'">
+                <span class="duelo-nombre">Modelo</span>
+                <span class="duelo-barra"><i [style.width.%]="c.anchoModelo"></i></span>
+                <span class="duelo-valor mono">{{ c.valorModelo }}</span>
+              </div>
+              <div class="duelo-fila base" [class.gana]="c.gana === 'base'">
+                <span class="duelo-nombre">{{ c.etiquetaBase }}</span>
+                <span class="duelo-barra"><i [style.width.%]="c.anchoBase"></i></span>
+                <span class="duelo-valor mono">{{ c.valorBase }}</span>
+              </div>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+</ng-template>
+
+<div class="ml" [attr.aria-busy]="estado() === 'cargando' || entrenando()">
+  @switch (estado()) {
+    @case ('cargando') {
+      <div class="esqueleto" role="status">
+        <span class="sr">Cargando los modelos de Machine Learning…</span>
+        <div class="esq-bloque"></div>
+        <div class="esq-bloque alto"></div>
+      </div>
+    }
+
+    @case ('sin-permiso') {
+      <div class="mensaje" role="alert">
+        <h2>No tienes acceso a esta sección</h2>
+        <p>Machine Learning usa el módulo de informes. Pide a un administrador que active «ver informes» para tu rol.</p>
+      </div>
+    }
+
+    @case ('error') {
+      <div class="mensaje" role="alert">
+        <h2>No se pudo cargar Machine Learning</h2>
+        <p>El servidor no respondió. Revisa tu conexión y vuelve a intentarlo.</p>
+        <button type="button" class="boton" (click)="reintentar()">Reintentar</button>
+      </div>
+    }
+
+    @case ('listo') {
+      @if (respuesta(); as r) {
+        <div class="barra">
+          @if (contexto(); as c) {
+            @if (c.tiendas.length > 1) {
+              <label class="campo">
+                <span>Tienda</span>
+                <select #tienda (change)="elegirTienda(+tienda.value)">
+                  @for (t of c.tiendas; track t.id) {
+                    <option [value]="t.id" [selected]="tiendaId() === t.id">{{ t.nombre }}</option>
+                  }
+                </select>
+              </label>
+            } @else {
+              <p class="campo"><span>Tienda</span><strong>{{ c.tiendas[0].nombre }}</strong></p>
+            }
+          }
+          @if (puedeEntrenar()) {
+            <button type="button" class="boton primario" [disabled]="entrenando()" (click)="entrenar()">
+              {{ entrenando() ? 'Entrenando…' : r.entrenado ? 'Entrenar de nuevo' : 'Entrenar modelos' }}
+            </button>
+          }
+        </div>
+        <p class="sr" role="status">{{ entrenando() ? 'Entrenando los modelos' : '' }}</p>
+        @if (errorEntrenar()) {
+          <p class="error" role="alert">{{ errorEntrenar() }}</p>
+        }
+
+        <section class="dataset" aria-label="Datos con los que se entrena">
+          <div class="dataset-cabecera">
+            <h2>Datos de la tienda</h2>
+            @if (r.dataset.sintetico) {
+              <span class="sello">Entrenado con datos sintéticos</span>
+            }
+          </div>
+          <dl class="cifras">
+            <div>
+              <dt>Pedidos</dt>
+              <dd class="cifra">{{ formatoEntero(r.dataset.pedidos) }}</dd>
+            </div>
+            <div>
+              <dt>Clientes</dt>
+              <dd class="cifra">{{ formatoEntero(r.dataset.clientes) }}</dd>
+            </div>
+            <div>
+              <dt>Eventos de navegación</dt>
+              <dd class="cifra">{{ formatoEntero(r.dataset.eventos) }}</dd>
+            </div>
+            <div>
+              <dt>Reseñas</dt>
+              <dd class="cifra">{{ formatoEntero(r.dataset.resenas) }}</dd>
+            </div>
+          </dl>
+          @if (r.dataset.desde && r.dataset.hasta) {
+            <p class="periodo mono">{{ fechaLarga(r.dataset.desde) }} al {{ fechaLarga(r.dataset.hasta) }}</p>
+          }
+          @if (r.dataset.pedidos_cancelados > 0) {
+            <p class="nota">
+              {{ formatoEntero(r.dataset.pedidos_cancelados) }} pedidos cancelados no cuentan como compra en ningún modelo.
+            </p>
+          }
+        </section>
+
+        @for (o of omitidos(); track o.tipo) {
+          <div class="aviso" role="status">
+            <strong>{{ o.titulo }}</strong> no se entrenó. {{ o.motivo }}
+          </div>
+        }
+
+        @if (!r.entrenado) {
+          <div class="mensaje vacio">
+            <h2>Aún no se entrenó</h2>
+            @if (puedeEntrenar()) {
+              <p>Entrénalo para ver el pronóstico de ventas, los clientes en riesgo y los productos que se compran juntos. Tarda pocos segundos.</p>
+              <button type="button" class="boton primario" [disabled]="entrenando()" (click)="entrenar()">
+                {{ entrenando() ? 'Entrenando…' : 'Entrenar modelos' }}
+              </button>
+            } @else {
+              <p>Pide a quien administra la tienda que entrene los modelos, o que active «crear informes» para tu rol.</p>
+            }
+          </div>
+        }
+
+        @if (pronostico(); as modelo) {
+          <section class="modelo" aria-labelledby="titulo-pronostico">
+            <h2 id="titulo-pronostico">{{ modelo.titulo }}</h2>
+            <ng-container *ngTemplateOutlet="ficha; context: { modelo: modelo, metricas: metricasPronostico() }" />
+
+            <div class="resultado">
+              <div class="resumen">
+                <div>
+                  <p class="cifra grande">{{ formatoBs(modelo.resultados.total_pronosticado) }}</p>
+                  <p class="resumen-texto">Ventas pronosticadas para los próximos {{ modelo.resultados.dias_pronostico }} días</p>
+                </div>
+                <div>
+                  <p class="cifra">{{ formatoBs(modelo.resultados.total_ultimos_dias) }}</p>
+                  <p class="resumen-texto">
+                    Vendido en los últimos {{ modelo.resultados.dias_pronostico }} días
+                    @if (modelo.resultados.variacion_pct !== null) {
+                      <span class="variacion mono" [class.sube]="modelo.resultados.variacion_pct >= 0"
+                            [class.baja]="modelo.resultados.variacion_pct < 0">
+                        {{ modelo.resultados.variacion_pct >= 0 ? '+' : '' }}{{ formatoPorcentaje(modelo.resultados.variacion_pct) }}
+                      </span>
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <ul class="leyenda">
+                <li><i class="trazo continuo"></i>Ventas reales</li>
+                <li><i class="trazo punteado"></i>Pronóstico</li>
+                <li><i class="trazo banda"></i>Rango del 80 %</li>
+              </ul>
+              <div class="grafico" role="img"
+                   aria-label="Ventas diarias de los últimos 90 días y pronóstico de los próximos 30 días con su rango del 80 por ciento">
+                <canvas #lienzoPronostico></canvas>
+              </div>
+
+              <h3 class="subtitulo">Prueba con los últimos {{ modelo.metricas.dias_validacion }} días</h3>
+              <p class="nota">El modelo no vio estos días al aprender. Así de cerca quedó de la venta real, frente a repetir la última semana.</p>
+              <ul class="leyenda">
+                <li><i class="trazo real"></i>Real</li>
+                <li><i class="trazo continuo"></i>Modelo</li>
+                <li><i class="trazo base"></i>Repetir la última semana</li>
+              </ul>
+              <div class="grafico corto" role="img"
+                   aria-label="Ventas reales de los últimos 28 días comparadas con las del modelo y con repetir la última semana">
+                <canvas #lienzoValidacion></canvas>
+              </div>
+            </div>
+          </section>
+        }
+
+        @if (abandono(); as modelo) {
+          <section class="modelo" aria-labelledby="titulo-abandono">
+            <h2 id="titulo-abandono">{{ modelo.titulo }}</h2>
+            <ng-container *ngTemplateOutlet="ficha; context: { modelo: modelo, metricas: metricasAbandono() }" />
+
+            <div class="resultado">
+              <h3 class="subtitulo">Riesgo de {{ formatoEntero(modelo.resultados.clientes_puntuados) }} clientes activos</h3>
+              <p class="nota">
+                Clientes que compraron en los últimos {{ modelo.resultados.dias_cliente_activo }} días. Quien lleva más tiempo sin comprar ya se da por perdido.
+              </p>
+              <div class="distribucion" role="img"
+                   [attr.aria-label]="'Riesgo bajo ' + distribucion()[0].cantidad + ', medio ' + distribucion()[1].cantidad + ', alto ' + distribucion()[2].cantidad + ' clientes'">
+                @for (d of distribucion(); track d.clave) {
+                  <span class="tramo {{ d.clave }}" [style.flex-grow]="d.cantidad"></span>
+                }
+              </div>
+              <ul class="distribucion-leyenda">
+                @for (d of distribucion(); track d.clave) {
+                  <li>
+                    <i class="punto {{ d.clave }}"></i>
+                    <span>{{ d.etiqueta }}</span>
+                    <strong class="mono">{{ formatoEntero(d.cantidad) }}</strong>
+                    <span class="mono tenue">{{ formatoPorcentaje(d.porcentaje, 0) }}</span>
+                  </li>
+                }
+              </ul>
+
+              <h3 class="subtitulo">Los {{ modelo.resultados.en_riesgo.length }} clientes con mayor riesgo</h3>
+              <div class="tabla-envoltura">
+                <table class="tabla">
+                  <caption class="sr">Clientes con mayor probabilidad de dejar de comprar</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Cliente</th>
+                      <th scope="col">Probabilidad de abandono</th>
+                      <th scope="col" class="der">Última compra</th>
+                      <th scope="col" class="der">Pedidos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of modelo.resultados.en_riesgo; track c.cliente_id) {
+                      <tr>
+                        <th scope="row">
+                          <span class="cliente-nombre">{{ c.nombre }}</span>
+                          <span class="cliente-correo">{{ c.correo }}</span>
+                        </th>
+                        <td>
+                          <span class="prob">
+                            <span class="prob-barra"><i [style.width.%]="c.probabilidad * 100"></i></span>
+                            <span class="mono">{{ formatoProporcion(c.probabilidad, 0) }}</span>
+                          </span>
+                        </td>
+                        <td class="der mono">{{ fechaLarga(c.ultima_compra) }}</td>
+                        <td class="der mono">{{ formatoEntero(c.pedidos) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 class="subtitulo">Qué pesa más en el riesgo</h3>
+              <p class="nota">Cada barra es el coeficiente de la regresión con las variables en la misma escala. Rojo empuja el riesgo hacia arriba; verde lo baja.</p>
+              <ul class="pesos">
+                @for (v of importancia(); track v.variable) {
+                  <li>
+                    <span class="peso-nombre">{{ v.etiqueta }}</span>
+                    <span class="peso-barra"><i [class.sube]="v.sube" [style.width.%]="v.ancho"></i></span>
+                    <span class="peso-valor mono">{{ v.sube ? '+' : '' }}{{ formatoDecimal(v.coeficiente, 2) }}</span>
+                    <span class="sr">{{ v.sube ? 'Sube el riesgo' : 'Baja el riesgo' }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </section>
+        }
+
+        @if (conjuntas(); as modelo) {
+          <section class="modelo" aria-labelledby="titulo-conjuntas">
+            <h2 id="titulo-conjuntas">{{ modelo.titulo }}</h2>
+            <ng-container *ngTemplateOutlet="ficha; context: { modelo: modelo, metricas: metricasConjuntas() }" />
+
+            <div class="resultado">
+              @for (aviso of modelo.metricas.avisos; track aviso) {
+                <div class="aviso" role="note">{{ aviso }}</div>
+              }
+              @if (modelo.resultados.pares.length === 0) {
+                <p class="nota">Ningún par de productos se repite lo suficiente para mostrarlo.</p>
+              } @else {
+                <h3 class="subtitulo">Pares que más se compran juntos</h3>
+                <div class="tabla-envoltura">
+                  <table class="tabla">
+                    <caption class="sr">Pares de productos ordenados por lift</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Pareja de productos</th>
+                        <th scope="col" class="der">Pedidos juntos</th>
+                        <th scope="col" class="der">Quien lleva el primero, lleva el segundo</th>
+                        <th scope="col">Lift</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of modelo.resultados.pares; track p.producto_a + p.producto_b) {
+                        <tr>
+                          <th scope="row">{{ p.producto_a }} <span class="mas">+</span> {{ p.producto_b }}</th>
+                          <td class="der mono">{{ formatoEntero(p.pedidos) }}</td>
+                          <td class="der mono">{{ formatoProporcion(p.confianza_a_b) }}</td>
+                          <td>
+                            <span class="prob">
+                              <span class="prob-barra lift"><i [style.width.%]="(p.lift / maxLift()) * 100"></i></span>
+                              <span class="mono">{{ formatoDecimal(p.lift, 2) }}×</span>
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <p class="nota">Un lift de 1× es lo que pasaría por casualidad; más de 2× ya sugiere un combo.</p>
+              }
+            </div>
+          </section>
+        }
+      } @else if (sinTiendas()) {
+        <div class="mensaje">
+          <h2>Aún no tienes tiendas</h2>
+          <p>Crea una tienda y registra ventas para entrenar modelos con sus datos.</p>
+        </div>
+      }
+    }
+  }
+</div>

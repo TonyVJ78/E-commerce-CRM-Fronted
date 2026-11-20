@@ -118,6 +118,11 @@ export const routes: Routes = [
         path: 'asistente',
         loadComponent: () =>
           import('./features/informes/informes.component').then(m => m.InformesComponent)
+      },
+      {
+        path: 'predicciones',
+        loadComponent: () =>
+          import('./features/informes/ml/ml-panel.component').then(m => m.MlPanelComponent)
       }
     ]
   },

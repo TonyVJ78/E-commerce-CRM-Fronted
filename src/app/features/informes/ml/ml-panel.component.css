@@ -1,0 +1,727 @@
+:host {
+  display: block;
+  --verde-texto: color-mix(in srgb, var(--success) 70%, #000);
+}
+
+.ml {
+  display: grid;
+  gap: 2rem;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tenue {
+  color: var(--muted);
+}
+
+h2,
+h3,
+h4 {
+  margin: 0;
+}
+
+/* Los títulos de sección son preguntas: la tipografía de display solo va aquí y en las cifras grandes. */
+.modelo > h2,
+.dataset-cabecera h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.subtitulo {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.nota {
+  max-width: 68ch;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* --- Barra de acciones --- */
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: -0.75rem;
+}
+
+.campo {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.campo > span {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.campo strong {
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.campo select {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  max-width: 100%;
+}
+
+.campo select:focus-visible {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: var(--focus-ring);
+}
+
+.boton {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.6rem 1.15rem;
+  border: 1px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.boton.primario {
+  background: var(--titicaca);
+  border-color: var(--titicaca);
+  color: #fff;
+}
+
+.boton:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.boton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.boton:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+.error {
+  font-size: 0.88rem;
+  color: var(--primary);
+}
+
+/* --- Bloques de datos verificados: franja de aguayo --- */
+.dataset,
+.ficha {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.dataset::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--aguayo-h);
+}
+
+.ficha::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--aguayo-v);
+}
+
+/* --- Dataset --- */
+.dataset {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem 1.25rem 1.25rem;
+}
+
+.dataset-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.sello {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+
+.cifras > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.15rem;
+}
+
+.cifras dt {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.cifras dd {
+  margin: 0;
+}
+
+.cifra {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.cifra.grande {
+  font-size: clamp(2rem, 1.5rem + 2vw, 2.9rem);
+  color: var(--titicaca);
+}
+
+.periodo {
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+/* --- Modelo --- */
+.modelo {
+  display: grid;
+  gap: 1rem;
+}
+
+.ficha {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 1.5rem 1.6rem;
+}
+
+.ficha-cabecera {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ficha-cabecera h3 {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ficha-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin: 0;
+}
+
+.ficha-datos dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.ficha-datos dd {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.ficha-explicacion {
+  max-width: 72ch;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+/* --- Métricas y duelo contra la línea base --- */
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 1.25rem 1.75rem;
+  margin: 0.25rem 0 0;
+  padding: 1.25rem 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.metrica {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+}
+
+.metrica-valor {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--titicaca);
+}
+
+.metrica-etiqueta {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.metrica-texto {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.duelo {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.duelo-fila {
+  display: grid;
+  grid-template-columns: minmax(5rem, 9.5rem) 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.duelo-barra {
+  display: block;
+  height: 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--titicaca-light);
+  overflow: hidden;
+}
+
+.duelo-barra i {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--titicaca);
+}
+
+.duelo-fila.base .duelo-barra i {
+  background: var(--muted);
+}
+
+.duelo-fila.gana {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.duelo-valor {
+  min-width: 4.5rem;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* --- Resultados --- */
+.resultado {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.5rem;
+}
+
+.resultado > .subtitulo:first-child {
+  margin-top: 0;
+}
+
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.resumen-texto {
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.variacion {
+  margin-left: 0.4rem;
+  font-weight: 500;
+}
+
+.variacion.sube {
+  color: var(--verde-texto);
+}
+
+.variacion.baja {
+  color: var(--primary);
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.trazo {
+  display: inline-block;
+  width: 1.6rem;
+  height: 0;
+  border-top: 2px solid var(--titicaca);
+}
+
+.trazo.punteado {
+  border-top-style: dashed;
+}
+
+.trazo.real {
+  border-top-color: var(--ink);
+}
+
+.trazo.base {
+  border-top: 2px dashed var(--muted);
+}
+
+.trazo.banda {
+  height: 0.7rem;
+  border: 0;
+  background: var(--titicaca-light);
+  border-radius: 2px;
+}
+
+.grafico {
+  position: relative;
+  height: 20rem;
+  min-width: 0;
+}
+
+.grafico.corto {
+  height: 14rem;
+}
+
+/* --- Riesgo de abandono --- */
+.distribucion {
+  display: flex;
+  height: 0.9rem;
+  gap: 2px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.tramo {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.tramo.bajo,
+.punto.bajo {
+  background: var(--success);
+}
+
+.tramo.medio,
+.punto.medio {
+  background: var(--accent);
+}
+
+.tramo.alto,
+.punto.alto {
+  background: var(--primary);
+}
+
+.distribucion-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.distribucion-leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.punto {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+
+.tabla-envoltura {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.tabla {
+  width: 100%;
+  min-width: 32rem;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.tabla th,
+.tabla td {
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabla tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.tabla thead th {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tabla tbody th {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tabla .der {
+  text-align: right;
+}
+
+.cliente-nombre,
+.cliente-correo {
+  display: block;
+}
+
+.cliente-correo {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.mas {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.prob {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.prob-barra {
+  flex: 1;
+  min-width: 4rem;
+  max-width: 11rem;
+  height: 0.55rem;
+  border-radius: var(--r-pill);
+  background: var(--titicaca-light);
+  overflow: hidden;
+}
+
+.prob-barra i {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+.prob-barra.lift i {
+  background: var(--titicaca);
+}
+
+.pesos {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pesos li {
+  display: grid;
+  grid-template-columns: minmax(8rem, 17rem) 1fr 3.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.peso-barra {
+  height: 0.55rem;
+  border-radius: var(--r-pill);
+  background: var(--titicaca-light);
+  overflow: hidden;
+}
+
+.peso-barra i {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--success);
+}
+
+.peso-barra i.sube {
+  background: var(--primary);
+}
+
+.peso-valor {
+  text-align: right;
+  font-size: 0.8rem;
+}
+
+/* --- Mensajes, avisos y esqueletos --- */
+.mensaje {
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--muted);
+}
+
+.mensaje h2 {
+  margin-bottom: 0.4rem;
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.mensaje p {
+  max-width: 52ch;
+  margin: 0 auto;
+}
+
+.mensaje .boton {
+  margin-top: 1rem;
+}
+
+.aviso {
+  max-width: 76ch;
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--r-sm);
+}
+
+.esqueleto {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.esq-bloque {
+  height: 9rem;
+  border-radius: var(--r-md);
+  background: var(--titicaca-light);
+}
+
+.esq-bloque.alto {
+  height: 22rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .esq-bloque {
+    animation: pulso 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulso {
+    50% {
+      opacity: 0.5;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .ml {
+    gap: 1.5rem;
+  }
+
+  .ficha {
+    padding: 1rem 1rem 1.25rem 1.3rem;
+  }
+
+  .grafico {
+    height: 16rem;
+  }
+
+  .duelo-fila {
+    grid-template-columns: 1fr auto;
+  }
+
+  .duelo-fila .duelo-barra {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .pesos li {
+    grid-template-columns: 1fr 3.5rem;
+  }
+
+  .pesos .peso-barra {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}
