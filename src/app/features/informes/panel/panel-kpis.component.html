@@ -1,0 +1,283 @@
+<div class="panel" [attr.aria-busy]="cargando()">
+  <section class="cabecera" aria-label="Filtros del panel">
+    <div class="presets" role="group" aria-label="Periodo">
+      @for (p of presets; track p.clave) {
+        <button type="button" class="preset" [class.activo]="filtros().preset === p.clave"
+                [attr.aria-pressed]="filtros().preset === p.clave" (click)="elegirPreset(p.clave)">
+          {{ p.etiqueta }}
+        </button>
+      }
+    </div>
+
+    <div class="campos">
+      @if (filtros().preset === 'personalizado') {
+        <label class="campo">
+          <span>Desde</span>
+          <input type="date" #desde [value]="filtros().desde" [max]="hoy" (change)="cambiarRango(desde.value, hasta.value)" />
+        </label>
+        <label class="campo">
+          <span>Hasta</span>
+          <input type="date" #hasta [value]="filtros().hasta" [max]="hoy" (change)="cambiarRango(desde.value, hasta.value)" />
+        </label>
+      }
+      <label class="campo">
+        <span>Comparar con</span>
+        <select #comparar (change)="cambiarComparacion(comparar.value)">
+          @for (c of comparaciones; track c.clave) {
+            <option [value]="c.clave" [selected]="filtros().comparar === c.clave">{{ c.etiqueta }}</option>
+          }
+        </select>
+      </label>
+      @if (datos(); as d) {
+        @if (d.tiendas.length > 1) {
+          <label class="campo">
+            <span>Tienda</span>
+            <select #tienda (change)="cambiarTienda(tienda.value)">
+              @for (t of d.tiendas; track t.id) {
+                <option [value]="t.id" [selected]="d.tienda_id === t.id">{{ t.nombre }}</option>
+              }
+            </select>
+          </label>
+        } @else if (d.tiendas.length === 1) {
+          <p class="tienda-unica"><span>Tienda</span>{{ d.tiendas[0].nombre }}</p>
+        }
+      }
+    </div>
+
+    @if (errorRango()) {
+      <p class="error-campo" role="alert">{{ errorRango() }}</p>
+    }
+    @if (datos()) {
+      <p class="periodo">
+        <span>{{ periodoTexto() }}</span>
+        @if (comparadoTexto()) {
+          <span class="periodo-comparado">comparado con {{ comparadoTexto() }}</span>
+        }
+      </p>
+    }
+  </section>
+
+  @if (error() === 'sin-permiso') {
+    <div class="mensaje" role="alert">
+      <h2>Sin acceso a informes</h2>
+      <p>Tu rol no tiene el permiso <strong>Ver · Informes con IA</strong>. Pídele a un administrador que te lo asigne en Roles y permisos.</p>
+    </div>
+  } @else if (error() === 'fallo') {
+    <div class="mensaje" role="alert">
+      <h2>No se pudieron cargar los KPIs</h2>
+      <p>El servidor no respondió con los datos del periodo. Revisa tu conexión y vuelve a intentarlo.</p>
+      <button type="button" class="btn-reintentar" (click)="reintentar()">Reintentar</button>
+    </div>
+  } @else if (errorRango() && !datos()) {
+    <div class="mensaje">
+      <h2>Corrige las fechas</h2>
+      <p>Elige una fecha inicial anterior o igual a la final para ver los KPIs.</p>
+    </div>
+  } @else if (!datos()) {
+    <div class="esqueleto" aria-label="Cargando KPIs" role="status">
+      @for (g of [1, 2, 3]; track g) {
+        <div class="esq-grupo">
+          <span class="esq-titulo"></span>
+          <div class="kpis">
+            @for (k of [1, 2, 3, 4]; track k) {
+              <div class="esq-kpi"><span></span><span></span><span></span></div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    @if (datos(); as d) {
+    <div class="cuerpo" [class.refrescando]="cargando()">
+      @if (!sinActividad()) {
+        <aside class="ia" aria-labelledby="ia-titulo">
+          <p class="rotulo">Lectura de la IA, no dato</p>
+          <h2 id="ia-titulo">Interpretación con IA</h2>
+          <p class="ia-aviso">La IA lee los números de este periodo y los explica. Es una opinión: contrástala con los datos antes de decidir.</p>
+          <label class="ia-pregunta">
+            <span>Pregunta algo sobre estos KPIs <em>(opcional)</em></span>
+            <textarea rows="2" maxlength="500" [ngModel]="pregunta()" (ngModelChange)="pregunta.set($event)"
+                      placeholder="Ej.: ¿por qué bajaron los pedidos?"></textarea>
+          </label>
+          <button type="button" class="btn-ia" (click)="interpretar()" [disabled]="interpretando()">
+            {{ interpretando() ? 'Interpretando…' : 'Interpretar este periodo' }}
+          </button>
+
+          <div aria-live="polite">
+            @if (interpretando()) {
+              <div class="ia-carga" role="status" aria-label="La IA está leyendo los KPIs">
+                <span></span><span></span><span></span>
+              </div>
+            }
+            @if (errorInterpretacion()) {
+              <p class="ia-error" role="alert">{{ errorInterpretacion() }}</p>
+            }
+            @if (interpretacion(); as i) {
+              <div class="lectura">
+                <p class="lectura-resumen">{{ i.resumen }}</p>
+                @if (i.hallazgos.length) {
+                  <h3>Hallazgos</h3>
+                  <ul>@for (h of i.hallazgos; track $index) { <li>{{ h }}</li> }</ul>
+                }
+                @if (i.alertas.length) {
+                  <h3 class="lectura-alertas">Alertas</h3>
+                  <ul class="lista-alertas">@for (a of i.alertas; track $index) { <li>{{ a }}</li> }</ul>
+                }
+                @if (i.recomendaciones.length) {
+                  <h3>Qué hacer</h3>
+                  <ul>@for (r of i.recomendaciones; track $index) { <li>{{ r }}</li> }</ul>
+                }
+              </div>
+            }
+          </div>
+        </aside>
+      }
+
+      <div class="principal">
+        @if (sinActividad()) {
+          <div class="mensaje">
+            <h2>No hay actividad en este periodo</h2>
+            <p>La tienda no registró ventas ni movimiento entre estas fechas. Prueba con un periodo más largo.</p>
+          </div>
+        } @else {
+          @for (g of grupos(); track g.clave) {
+            <section class="bloque" [attr.aria-labelledby]="'grupo-' + g.clave">
+              <h2 class="bloque-titulo" [id]="'grupo-' + g.clave">{{ g.titulo }}</h2>
+              <div class="kpis">
+                @for (k of g.kpis; track k.clave) {
+                  <article class="kpi">
+                    <h3 class="kpi-titulo">{{ k.titulo }}</h3>
+                    <p class="kpi-valor">{{ k.valor }}</p>
+                    @if (k.variacion) {
+                      <p class="kpi-var" [attr.data-tono]="k.tono">
+                        <span aria-hidden="true">{{ k.flecha }} {{ k.variacion }}</span>
+                        <span class="sr">{{ k.lectura }}</span>
+                        @if (k.previo) {
+                          <span class="kpi-previo">antes {{ k.previo }}</span>
+                        }
+                      </p>
+                    } @else if (k.sinBase) {
+                      <p class="kpi-var" data-tono="neutra">Sin base para comparar</p>
+                    }
+                    <p class="kpi-desc">{{ k.descripcion }}</p>
+                  </article>
+                }
+              </div>
+            </section>
+          }
+
+          <section class="bloque" aria-labelledby="grupo-evolucion">
+            <h2 class="bloque-titulo" id="grupo-evolucion">¿Cómo evolucionan mis ventas?</h2>
+            <div class="graficos">
+              <figure class="grafico">
+                <figcaption>Ingresos por día</figcaption>
+                @if (d.series.ventas_diarias.length) {
+                  <div class="lienzo"><canvas #lienzoVentas role="img" aria-label="Línea de ingresos por día del periodo"></canvas></div>
+                } @else {
+                  <p class="vacio-serie">Sin ventas en este periodo.</p>
+                }
+              </figure>
+              <figure class="grafico">
+                <figcaption>Resultado de los últimos 12 meses</figcaption>
+                @if (d.series.resultado_mensual.length) {
+                  <div class="lienzo"><canvas #lienzoResultado role="img" aria-label="Barras mensuales de ingresos, ganancia bruta y gastos, con línea de utilidad neta"></canvas></div>
+                } @else {
+                  <p class="vacio-serie">Todavía no hay meses con movimiento.</p>
+                }
+              </figure>
+            </div>
+          </section>
+
+          <section class="bloque" aria-labelledby="grupo-vende">
+            <h2 class="bloque-titulo" id="grupo-vende">¿Qué es lo que más se vende?</h2>
+            <div class="graficos">
+              <figure class="grafico">
+                <figcaption>Productos con más ingresos</figcaption>
+                @if (d.series.top_productos.length) {
+                  <div class="lienzo" [style.height.px]="alturaBarras(d.series.top_productos.length)">
+                    <canvas #lienzoProductos role="img" aria-label="Barras de ingresos de los productos más vendidos"></canvas>
+                  </div>
+                } @else {
+                  <p class="vacio-serie">Sin productos vendidos en este periodo.</p>
+                }
+              </figure>
+              <figure class="grafico">
+                <figcaption>Participación de cada categoría en las ventas</figcaption>
+                @if (d.series.ventas_por_categoria.length) {
+                  <div class="lienzo" [style.height.px]="alturaBarras(d.series.ventas_por_categoria.length)">
+                    <canvas #lienzoCategorias role="img" aria-label="Barras con el porcentaje de ventas de cada categoría"></canvas>
+                  </div>
+                } @else {
+                  <p class="vacio-serie">Sin ventas por categoría en este periodo.</p>
+                }
+              </figure>
+            </div>
+          </section>
+
+          <section class="bloque" aria-labelledby="grupo-compra">
+            <h2 class="bloque-titulo" id="grupo-compra">¿Cuándo y dónde me compran?</h2>
+            <div class="graficos">
+              <figure class="grafico">
+                <figcaption>De la visita a la compra</figcaption>
+                <ol class="embudo">
+                  @for (paso of embudo(); track paso.etiqueta) {
+                    <li>
+                      <div class="embudo-texto">
+                        <span>{{ paso.etiqueta }}</span>
+                        <strong>{{ paso.cantidad }}</strong>
+                      </div>
+                      <div class="embudo-barra"><span [style.width.%]="paso.ancho"></span></div>
+                      @if (paso.tasa) {
+                        <small>{{ paso.tasa }}</small>
+                      }
+                    </li>
+                  }
+                </ol>
+              </figure>
+              <figure class="grafico">
+                <figcaption>Pedidos por día y hora</figcaption>
+                @if (mapaCalor().maximo) {
+                  <div class="calor-scroll">
+                    <div class="calor" role="img" [attr.aria-label]="'Mapa de calor de pedidos por día de la semana y hora. Momento más fuerte: ' + mapaCalor().pico">
+                      <span></span>
+                      @for (h of horas; track h) {
+                        <span class="calor-hora">{{ h % 3 === 0 ? h : '' }}</span>
+                      }
+                      @for (fila of mapaCalor().filas; track fila.dia) {
+                        <span class="calor-dia">{{ fila.dia }}</span>
+                        @for (c of fila.celdas; track $index) {
+                          <span class="celda" [style.--i]="c.intensidad" [title]="c.titulo"></span>
+                        }
+                      }
+                    </div>
+                  </div>
+                  <p class="calor-pico">Momento más fuerte: <strong>{{ mapaCalor().pico }}</strong></p>
+                } @else {
+                  <p class="vacio-serie">Sin pedidos en este periodo.</p>
+                }
+              </figure>
+              <figure class="grafico ancho">
+                <figcaption>Ingresos por ciudad</figcaption>
+                @if (d.series.ventas_por_ciudad.length) {
+                  <div class="lienzo" [style.height.px]="alturaBarras(d.series.ventas_por_ciudad.length)">
+                    <canvas #lienzoCiudades role="img" aria-label="Barras de ingresos por ciudad de entrega"></canvas>
+                  </div>
+                } @else {
+                  <p class="vacio-serie">Sin pedidos con ciudad de entrega en este periodo.</p>
+                }
+              </figure>
+            </div>
+          </section>
+
+          @if (d.notas.length) {
+            <section class="notas" aria-labelledby="notas-titulo">
+              <h2 id="notas-titulo">Notas sobre estos datos</h2>
+              <ul>@for (n of d.notas; track $index) { <li>{{ n }}</li> }</ul>
+            </section>
+          }
+        }
+      </div>
+    </div>
+    }
+  }
+</div>

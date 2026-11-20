@@ -1,0 +1,23 @@
+<div class="informes">
+  <header class="cabecera">
+    <h1>Informes de tienda</h1>
+    <p>Cómo va tu tienda: los números del periodo, un asistente para preguntar con tus palabras y las predicciones de Machine Learning.</p>
+  </header>
+
+  <nav class="pestanas" aria-label="Secciones de informes">
+    <a routerLink="/informes" routerLinkActive="activa" [routerLinkActiveOptions]="{ exact: true }">
+      <span>Panel de KPIs</span>
+      <small>Los números del periodo</small>
+    </a>
+    <a routerLink="/informes/asistente" routerLinkActive="activa">
+      <span>Asistente</span>
+      <small>Pregunta con tus palabras</small>
+    </a>
+    <a routerLink="/informes/predicciones" routerLinkActive="activa">
+      <span>Machine Learning</span>
+      <small>Qué puede pasar</small>
+    </a>
+  </nav>
+
+  <router-outlet />
+</div>

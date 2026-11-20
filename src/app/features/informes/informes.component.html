@@ -1,12 +1,11 @@
-<div class="informes-page">
-  <header class="page-head">
-    <div>
-      <p class="eyebrow">Inteligencia artificial</p>
-      <h1>Informes de tienda</h1>
-      <p class="sub">Pide un informe en lenguaje natural o por voz. La IA consulta la base, arma la tabla y la analiza.</p>
-    </div>
-    @if (contexto) {
-      <div class="head-acciones">
+<div class="asistente">
+  @if (contexto) {
+    <div class="barra">
+      <p class="barra-texto">
+        Conversación libre: pide lo que necesites, por escrito o por voz. Para ver tus KPIs de siempre, abre el
+        <a routerLink="/informes">Panel de KPIs</a>.
+      </p>
+      <div class="barra-acciones">
         @if (contexto.tiendas.length > 1) {
           <label class="selector-tienda">
             <span>Tienda</span>
@@ -20,23 +19,23 @@
         } @else if (contexto.tiendas.length === 1) {
           <span class="tienda-unica">{{ contexto.tiendas[0].nombre }}</span>
         }
-        <button type="button" class="btn-sec" (click)="alternarHistorial()" [class.activo]="historialAbierto">
+        <button type="button" class="btn-sec" (click)="alternarHistorial()" [class.activo]="historialAbierto" [attr.aria-expanded]="historialAbierto">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Historial
         </button>
       </div>
-    }
-  </header>
+    </div>
+  }
 
   @if (cargandoContexto) {
-    <div class="estado"><div class="spinner"></div><p>Cargando…</p></div>
+    <div class="estado" role="status"><div class="spinner"></div><p>Cargando…</p></div>
   } @else if (sinPermiso) {
-    <div class="estado aviso">
+    <div class="estado aviso" role="alert">
       <h2>Sin acceso a informes</h2>
       <p>Tu rol no tiene el permiso <strong>Ver · Informes con IA</strong>. Pídele a un administrador que te lo asigne en Roles y permisos.</p>
     </div>
   } @else if (errorContexto) {
-    <div class="estado aviso"><p>{{ errorContexto }}</p></div>
+    <div class="estado aviso" role="alert"><p>{{ errorContexto }}</p></div>
   } @else {
     @if (historialAbierto) {
       <section class="historial" aria-label="Historial de informes">
@@ -73,7 +72,6 @@
     }
 
     <div class="layout">
-      <!-- Conversación -->
       <section class="chat" aria-label="Conversación con el analista">
         <div class="chat-head">
           <div class="avatar" aria-hidden="true">
@@ -91,16 +89,15 @@
         <div class="mensajes" #lista aria-live="polite">
           @for (m of mensajes; track trackPorIndice(i); let i = $index) {
             <div class="fila" [class.fila-usuario]="m.rol === 'usuario'">
-              <div class="burbuja" [class.burbuja-usuario]="m.rol === 'usuario'" [class.burbuja-error]="m.error">
+              <div class="burbuja" [class.burbuja-usuario]="m.rol === 'usuario'" [class.burbuja-error]="m.error"
+                   [class.burbuja-datos]="m.rol === 'asistente' && m.informeId">
                 @if (m.rol === 'usuario') {
                   <span class="texto-plano">{{ m.contenido }}</span>
                 } @else if (m.informeId) {
                   <button type="button" class="tarjeta-informe" (click)="abrirDesdeMensaje(m)" [class.actual]="informe?.id === m.informeId">
-                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 17v-3M12 17v-6M16 17v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>
-                    <span>
-                      <strong>{{ m.informeTitulo }}</strong>
-                      <small>{{ informe?.id === m.informeId ? 'Mostrando a la derecha' : 'Abrir informe' }}</small>
-                    </span>
+                    <span class="rotulo-datos">Informe con datos de la base</span>
+                    <strong>{{ m.informeTitulo }}</strong>
+                    <small>{{ informe?.id === m.informeId ? 'Se muestra a la derecha' : 'Abrir informe' }}</small>
                   </button>
                 } @else {
                   <app-markdown [texto]="m.contenido"></app-markdown>
@@ -117,8 +114,8 @@
           }
 
           @if (mensajes.length === 1 && contexto?.ejemplos?.length && puedeCrear && !enviando) {
-            <div class="ejemplos">
-              <p>Prueba con:</p>
+            <div class="sugerencias">
+              <p class="sugerencias-titulo">Prueba con:</p>
               @for (e of contexto!.ejemplos; track e) {
                 <button type="button" class="chip" (click)="enviar(e)">{{ e }}</button>
               }
@@ -155,18 +152,18 @@
             </button>
           </form>
           @if (errorVoz) {
-            <p class="error-voz">{{ errorVoz }}</p>
+            <p class="error-voz" role="alert">{{ errorVoz }}</p>
           }
         }
       </section>
 
-      <!-- Informe -->
       <section class="reporte" aria-label="Informe">
         @if (abriendoInforme) {
-          <div class="estado"><div class="spinner"></div><p>Abriendo informe…</p></div>
+          <div class="estado" role="status"><div class="spinner"></div><p>Abriendo informe…</p></div>
         } @else if (informe) {
           <div class="reporte-head">
             <div>
+              <p class="rotulo-datos">Datos de la base</p>
               <h2>{{ informe.titulo }}</h2>
               <p class="meta">
                 {{ informe.tienda_nombre || 'Varias tiendas' }} · {{ informe.fecha_generacion | date: 'dd/MM/yyyy HH:mm' }}
@@ -179,22 +176,22 @@
               }
             </div>
             <div class="exportar">
-              <button type="button" class="btn-exp pdf" (click)="exportar('pdf')" [disabled]="!!exportando">
+              <button type="button" class="btn-exp" (click)="exportar('pdf')" [disabled]="!!exportando">
                 {{ exportando === 'pdf' ? 'Generando…' : 'PDF' }}
               </button>
-              <button type="button" class="btn-exp xlsx" (click)="exportar('xlsx')" [disabled]="!!exportando">
+              <button type="button" class="btn-exp" (click)="exportar('xlsx')" [disabled]="!!exportando">
                 {{ exportando === 'xlsx' ? 'Generando…' : 'Excel' }}
               </button>
             </div>
           </div>
           @if (errorExportar) {
-            <p class="error-exp">{{ errorExportar }}</p>
+            <p class="error-exp" role="alert">{{ errorExportar }}</p>
           }
 
           @if (informe.analisis) {
             <div class="analisis">
               <div class="analisis-head">
-                <h3>Análisis</h3>
+                <h3>Análisis de la IA</h3>
                 @if (lecturaDisponible) {
                   <button type="button" class="btn-escuchar" [class.activo]="hablando" (click)="alternarLectura()"
                           [attr.aria-pressed]="hablando">
@@ -234,7 +231,7 @@
                   @for (fila of filasVisibles; track $index) {
                     <tr>
                       @for (c of informe.columnas; track c.clave; let j = $index) {
-                        <td [class.num]="esNumerica(c)" [attr.data-tendencia]="tendencia(fila[j], c)">{{ formato(fila[j], c) }}</td>
+                        <td [class.num]="esNumerica(c)" [class.fecha]="c.tipo === 'fecha'" [attr.data-tendencia]="tendencia(fila[j], c)">{{ formato(fila[j], c) }}</td>
                       }
                     </tr>
                   }
@@ -258,9 +255,9 @@
           }
         } @else {
           <div class="vacio-reporte">
-            <svg viewBox="0 0 48 48" width="56" height="56" aria-hidden="true"><rect x="6" y="6" width="36" height="36" rx="8" fill="var(--red-50, #FDECEE)"/><path d="M15 33v-7M22 33V17M29 33v-11M36 33H12" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/></svg>
-            <h3>Tu informe aparecerá aquí</h3>
-            <p>Con la tabla de datos, el análisis de la IA, un gráfico y los botones para exportar a PDF o Excel.</p>
+            <div class="banda-aguayo" aria-hidden="true"></div>
+            <h3>Aquí aparecerá el informe</h3>
+            <p>Pídelo en el chat y verás la tabla con los datos de tu tienda, el análisis de la IA, un gráfico y los botones para exportar a PDF o Excel.</p>
           </div>
         }
       </section>

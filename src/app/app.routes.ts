@@ -107,7 +107,19 @@ export const routes: Routes = [
     path: 'informes',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/informes/informes.component').then(m => m.InformesComponent)
+      import('./features/informes/informes-shell.component').then(m => m.InformesShellComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/informes/panel/panel-kpis.component').then(m => m.PanelKpisComponent)
+      },
+      {
+        path: 'asistente',
+        loadComponent: () =>
+          import('./features/informes/informes.component').then(m => m.InformesComponent)
+      }
+    ]
   },
   {
     path: 'perfil',

@@ -19,7 +19,7 @@ export class DashboardEmpresaComponent implements OnInit {
   readonly metrics = signal<DashboardMetrics | null>(null);
   readonly usarFallback = signal(false);
 
-  private chartInstance: Chart | null = null;
+  private chartInstance: Chart<'bar', number[], string> | null = null;
   @ViewChild('ventasChart') ventasChart?: ElementRef<HTMLCanvasElement>;
 
   readonly ventasSemana = computed<VentaDia[]>(() => {

@@ -10,6 +10,7 @@ import {
   inject
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import Chart from 'chart.js/auto';
@@ -47,15 +48,15 @@ const CLAVE_TIENDA = 'km_informes_tienda';
 /**
  * Informes de tienda con IA (CU-34) para administradores y encargados.
  *
- * A la izquierda, la conversación (texto o voz): si el pedido es muy general
- * la IA pregunta antes de consultar. A la derecha, el informe: tabla con los
- * datos reales de la base, análisis (que se puede escuchar), gráfico y
- * exportación a PDF o Excel.
+ * Modo de conversación libre. A la izquierda, la charla (texto o voz): si el
+ * pedido es muy general la IA pregunta antes de consultar. A la derecha, el
+ * informe: tabla con los datos reales de la base (con franja de aguayo),
+ * análisis de la IA (que se puede escuchar), gráfico y exportación a PDF o Excel.
  */
 @Component({
   selector: 'app-informes',
   standalone: true,
-  imports: [CommonModule, FormsModule, MarkdownComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MarkdownComponent],
   templateUrl: './informes.component.html',
   styleUrls: ['./informes.component.css']
 })
@@ -489,9 +490,10 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
     const columnaValor = informe.columnas[iValor];
 
     const estilos = getComputedStyle(document.documentElement);
-    const primario = estilos.getPropertyValue('--primary').trim() || '#C8102E';
+    const datos = estilos.getPropertyValue('--titicaca').trim() || '#1B4F72';
     const linea = estilos.getPropertyValue('--line').trim() || '#E6E8EE';
     const tenue = estilos.getPropertyValue('--muted').trim() || '#5F6675';
+    const tipografia = { family: "'IBM Plex Mono', monospace", size: 11 };
 
     this.chart = new Chart(canvas, {
       type: esLinea ? 'line' : 'bar',
@@ -500,10 +502,10 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
         datasets: [{
           label: columnaValor.titulo,
           data: filas.map(f => Number(f[iValor]) || 0),
-          backgroundColor: esLinea ? 'rgba(200, 16, 46, 0.12)' : primario,
-          borderColor: primario,
+          backgroundColor: esLinea ? `${datos}1F` : datos,
+          borderColor: datos,
           borderWidth: esLinea ? 2.5 : 0,
-          borderRadius: esLinea ? 0 : 6,
+          borderRadius: esLinea ? 0 : 3,
           fill: esLinea,
           tension: 0.3,
           pointRadius: esLinea ? 3 : 0
@@ -521,8 +523,8 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
           }
         },
         scales: {
-          x: { grid: { color: linea }, ticks: { color: tenue, font: { family: 'Inter' } } },
-          y: { grid: { color: linea }, ticks: { color: tenue, font: { family: 'Inter' } }, beginAtZero: true }
+          x: { grid: { color: linea }, ticks: { color: tenue, font: tipografia } },
+          y: { grid: { color: linea }, ticks: { color: tenue, font: tipografia }, beginAtZero: true }
         }
       }
     });
