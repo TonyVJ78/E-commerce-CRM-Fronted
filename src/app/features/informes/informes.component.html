@@ -174,6 +174,9 @@
               @if (informe.filtros) {
                 <p class="filtros">{{ informe.filtros }}</p>
               }
+              @for (nota of informe.notas; track $index) {
+                <p class="nota-informe">{{ nota }}</p>
+              }
             </div>
             <div class="exportar">
               <button type="button" class="btn-exp pdf" (click)="exportar('pdf')" [disabled]="!!exportando">
@@ -190,7 +193,22 @@
 
           @if (informe.analisis) {
             <div class="analisis">
-              <h3>Análisis</h3>
+              <div class="analisis-head">
+                <h3>Análisis</h3>
+                @if (lecturaDisponible) {
+                  <button type="button" class="btn-escuchar" [class.activo]="hablando" (click)="alternarLectura()"
+                          [attr.aria-pressed]="hablando">
+                    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                      @if (hablando) {
+                        <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>
+                      } @else {
+                        <path d="M4 9v6h4l5 4V5L8 9H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      }
+                    </svg>
+                    {{ hablando ? 'Detener' : 'Escuchar análisis' }}
+                  </button>
+                }
+              </div>
               <app-markdown [texto]="informe.analisis"></app-markdown>
             </div>
           }
@@ -216,7 +234,7 @@
                   @for (fila of filasVisibles; track $index) {
                     <tr>
                       @for (c of informe.columnas; track c.clave; let j = $index) {
-                        <td [class.num]="esNumerica(c)">{{ formato(fila[j], c) }}</td>
+                        <td [class.num]="esNumerica(c)" [attr.data-tendencia]="tendencia(fila[j], c)">{{ formato(fila[j], c) }}</td>
                       }
                     </tr>
                   }

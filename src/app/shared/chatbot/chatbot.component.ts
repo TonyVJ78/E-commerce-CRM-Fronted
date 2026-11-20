@@ -235,10 +235,7 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
     const sintesis = window.speechSynthesis;
     const frase = new SpeechSynthesisUtterance(texto);
     frase.lang = 'es-BO';
-    // Una voz en español si el sistema tiene; si no, la que el navegador elija para es-BO.
-    const voces = sintesis.getVoices();
-    const voz = voces.find(v => v.lang.replace('_', '-') === 'es-BO')
-      ?? voces.find(v => v.lang.toLowerCase().startsWith('es'));
+    const voz = elegirVozEspanola();
     if (voz) frase.voice = voz;
     frase.onend = frase.onerror = () => this.zona.run(() => (this.hablando = false));
     sintesis.cancel();
@@ -278,11 +275,18 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
   }
 }
 
+/** Una voz en español si el sistema tiene; si no, la que el navegador elija para es-BO. */
+export function elegirVozEspanola(): SpeechSynthesisVoice | undefined {
+  const voces = window.speechSynthesis.getVoices();
+  return voces.find(v => v.lang.replace('_', '-') === 'es-BO')
+    ?? voces.find(v => v.lang.toLowerCase().startsWith('es'));
+}
+
 /**
  * Texto plano para leer en voz alta: los enlaces `[Nombre](producto:ID)` se
  * leen solo por su nombre y se quitan las marcas de Markdown y los emojis.
  */
-function textoParaLeer(markdown: string): string {
+export function textoParaLeer(markdown: string): string {
   return markdown
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -290,7 +294,8 @@ function textoParaLeer(markdown: string): string {
     .replace(/[*_`~#>|]/g, '')
     .replace(/^\s*[-+]\s+/gm, '')
     .replace(/\p{Extended_Pictographic}/gu, '')
-    .replace(/\bBs\.?\s*(\d+(?:[.,]\d+)?)/g, '$1 bolivianos')
+    .replace(/(^|\s)-(?=\d)/g, '$1menos ')
+    .replace(/\bBs\.?\s*(\d+(?:[.,]\d{3})*(?:[.,]\d+)?)/g, '$1 bolivianos')
     // Cada línea (ítem de lista, título) termina en pausa al leerse.
     .replace(/([^.!?:;,\s])[ \t]*\n+/g, '$1. ')
     .replace(/\s+/g, ' ')

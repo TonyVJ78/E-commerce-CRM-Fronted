@@ -23,6 +23,7 @@ import {
   ValorCelda
 } from '../../core/models';
 import { InformesService } from '../../core/services/informes.service';
+import { elegirVozEspanola, textoParaLeer } from '../../shared/chatbot/chatbot.component';
 import { MarkdownComponent } from '../../shared/markdown/markdown.component';
 
 /** API de dictado del navegador (Chrome/Edge la exponen con prefijo `webkit`). */
@@ -37,8 +38,10 @@ type Reconocimiento = {
   stop(): void;
 };
 
-const NUMERICAS = new Set(['entero', 'moneda', 'decimal']);
+const NUMERICAS = new Set(['entero', 'moneda', 'decimal', 'porcentaje', 'variacion', 'puntos']);
 const MAX_PUNTOS_GRAFICO = 20;
+/** Chrome corta las lecturas largas: el análisis se lee por trozos de pocas frases. */
+const MAX_CARACTERES_POR_TROZO = 200;
 const CLAVE_TIENDA = 'km_informes_tienda';
 
 /**
@@ -46,7 +49,8 @@ const CLAVE_TIENDA = 'km_informes_tienda';
  *
  * A la izquierda, la conversación (texto o voz): si el pedido es muy general
  * la IA pregunta antes de consultar. A la derecha, el informe: tabla con los
- * datos reales de la base, análisis, gráfico y exportación a PDF o Excel.
+ * datos reales de la base, análisis (que se puede escuchar), gráfico y
+ * exportación a PDF o Excel.
  */
 @Component({
   selector: 'app-informes',
@@ -86,10 +90,14 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
   filasVisibles: ValorCelda[][] = [];
 
   readonly vozDisponible = !!this.claseReconocimiento();
+  readonly lecturaDisponible = 'speechSynthesis' in window;
   escuchando = false;
+  hablando = false;
   errorVoz = '';
   private reconocimiento: Reconocimiento | null = null;
   private textoAntesDeDictar = '';
+  /** Identifica la lectura en curso: las que se cancelan no deben apagar el estado de la nueva. */
+  private lecturaActual = 0;
 
   private chart: Chart | null = null;
   private redibujarGrafico = false;
@@ -106,6 +114,7 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
       this.bajarAlFinal = true;
     }));
     this.subs.add(this.informes.informe$.subscribe(informe => {
+      this.callar();
       this.informe = informe;
       this.orden = null;
       this.filasVisibles = informe ? [...informe.filas] : [];
@@ -160,6 +169,7 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.subs.unsubscribe();
     this.chart?.destroy();
     this.reconocimiento?.stop();
+    this.callar();
   }
 
   // ---------------------------------------------------------------- conversación
@@ -206,6 +216,7 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   nuevaConversacion(): void {
     this.detenerVoz();
+    this.callar();
     this.informes.reiniciar();
   }
 
@@ -271,6 +282,40 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
   private detenerVoz(): void {
     this.reconocimiento?.stop();
     this.escuchando = false;
+  }
+
+  alternarLectura(): void {
+    if (this.hablando) {
+      this.callar();
+      return;
+    }
+    const analisis = this.informe?.analisis;
+    if (!analisis || !this.lecturaDisponible) return;
+    const trozos = dividirEnTrozos(textoParaLeer(analisis));
+    if (!trozos.length) return;
+
+    const sintesis = window.speechSynthesis;
+    const voz = elegirVozEspanola();
+    const lectura = ++this.lecturaActual;
+    sintesis.cancel();
+    this.hablando = true;
+    trozos.forEach((trozo, i) => {
+      const frase = new SpeechSynthesisUtterance(trozo);
+      frase.lang = 'es-BO';
+      if (voz) frase.voice = voz;
+      const terminar = () => this.zona.run(() => {
+        if (lectura === this.lecturaActual) this.hablando = false;
+      });
+      frase.onerror = terminar;
+      if (i === trozos.length - 1) frase.onend = terminar;
+      sintesis.speak(frase);
+    });
+  }
+
+  callar(): void {
+    this.lecturaActual++;
+    this.hablando = false;
+    if (this.lecturaDisponible) window.speechSynthesis.cancel();
   }
 
   // ---------------------------------------------------------------- informe
@@ -386,9 +431,29 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
         return valor.toLocaleString('es-BO', { maximumFractionDigits: 0 });
       case 'decimal':
         return valor.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      case 'porcentaje':
+        return `${this.unDecimal(valor)} %`;
+      case 'variacion':
+        return `${valor > 0 ? '+' : ''}${this.unDecimal(valor)} %`;
+      case 'puntos':
+        return `${valor > 0 ? '+' : ''}${this.unDecimal(valor)} pp`;
       default:
         return String(valor);
     }
+  }
+
+  private unDecimal(valor: number): string {
+    return valor.toLocaleString('es-BO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+
+  /**
+   * Si una variación es buena o mala para la tienda: subir es bueno salvo en los
+   * KPI que mejoran al bajar (cancelaciones, gastos, días de entrega).
+   */
+  tendencia(valor: ValorCelda, columna: ColumnaInforme): 'buena' | 'mala' | null {
+    if (columna.tipo !== 'variacion' && columna.tipo !== 'puntos') return null;
+    if (typeof valor !== 'number' || valor === 0) return null;
+    return (valor > 0) === (columna.mejor_si !== 'baja') ? 'buena' : 'mala';
   }
 
   /** Totales de las columnas que suman (unidades, montos); `null` en las demás. */
@@ -462,4 +527,20 @@ export class InformesComponent implements OnInit, AfterViewChecked, OnDestroy {
       }
     });
   }
+}
+
+/** Parte el texto en trozos de frases completas para que `speechSynthesis` no los corte. */
+function dividirEnTrozos(texto: string): string[] {
+  // Un punto seguido de un dígito es de un número (1.234), no el fin de una frase.
+  const frases = texto.match(/(?:[^.!?]|\.(?=\d))+[.!?]*\s*/g) ?? [];
+  const trozos: string[] = [];
+  for (const frase of frases) {
+    const ultimo = trozos.length - 1;
+    if (ultimo >= 0 && trozos[ultimo].length + frase.length <= MAX_CARACTERES_POR_TROZO) {
+      trozos[ultimo] += frase;
+    } else {
+      trozos.push(frase);
+    }
+  }
+  return trozos.map(t => t.trim()).filter(Boolean);
 }

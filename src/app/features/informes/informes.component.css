@@ -581,13 +581,58 @@
   font-size: 0.92rem;
 }
 
+.analisis-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
 .analisis h3 {
   font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--primary);
-  margin-bottom: 0.35rem;
+}
+
+.btn-escuchar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line, var(--border));
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink, var(--text-primary));
+  cursor: pointer;
+}
+
+.btn-escuchar:hover,
+.btn-escuchar.activo {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.nota-informe {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted, var(--text-secondary));
+}
+
+td[data-tendencia='buena'] {
+  color: var(--success);
+  font-weight: 700;
+}
+
+td[data-tendencia='mala'] {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .grafico {

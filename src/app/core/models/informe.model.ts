@@ -1,7 +1,18 @@
 import { MensajeChatApi } from './chatbot.model';
 
-/** Tipo de una columna del informe: define cómo se formatea y alinea. */
-export type TipoColumnaInforme = 'texto' | 'entero' | 'moneda' | 'decimal' | 'fecha';
+/**
+ * Tipo de una columna del informe: define cómo se formatea y alinea.
+ * `variacion` es el cambio entre periodos en % y `puntos` la diferencia entre dos porcentajes.
+ */
+export type TipoColumnaInforme =
+  | 'texto'
+  | 'entero'
+  | 'moneda'
+  | 'decimal'
+  | 'fecha'
+  | 'porcentaje'
+  | 'variacion'
+  | 'puntos';
 
 export interface ColumnaInforme {
   clave: string;
@@ -9,6 +20,8 @@ export interface ColumnaInforme {
   tipo: TipoColumnaInforme;
   /** Se totaliza al pie. Los conteos distintos y los promedios no. */
   sumable?: boolean;
+  /** Si el KPI mejora al bajar (cancelaciones, gastos, tiempos de entrega), una variación negativa es buena. */
+  mejor_si?: 'baja';
 }
 
 export type ValorCelda = string | number | null;
@@ -38,6 +51,8 @@ export interface Informe extends InformeResumen {
   filas: ValorCelda[][];
   truncado: boolean;
   filtros: string;
+  /** Avisos que acompañan la tabla: periodo comparado, ventas sin costo, filtros que no aplican. */
+  notas: string[];
 }
 
 export interface ContextoInformes {
