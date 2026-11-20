@@ -1,0 +1,251 @@
+<main class="layout satisfaccion-page">
+  <header class="page-head">
+    <div>
+      <nav class="breadcrumb-nav" aria-label="Migas de pan">
+        <a routerLink="/panel-vendedor" class="breadcrumb-link">Panel Vendedor</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Satisfacción de clientes</span>
+      </nav>
+      <h1>Satisfacción de clientes</h1>
+      <p>Calificaciones que tus clientes dejan cuando reciben su pedido.</p>
+    </div>
+    <div class="filtros">
+      @if (tiendas().length > 1) {
+        <label class="campo">
+          <span>Tienda</span>
+          <select #selector class="input" [value]="tiendaId()" (change)="seleccionarTienda(+selector.value)">
+            @for (tienda of tiendas(); track tienda.id) {
+              <option [value]="tienda.id">{{ tienda.nombre }}</option>
+            }
+          </select>
+        </label>
+      }
+      <label class="campo">
+        <span>Desde</span>
+        <input #inicio class="input" type="date" [value]="desde()" [max]="hasta()"
+          (change)="cambiarFecha('desde', inicio.value)">
+      </label>
+      <label class="campo">
+        <span>Hasta</span>
+        <input #fin class="input" type="date" [value]="hasta()" [min]="desde()"
+          (change)="cambiarFecha('hasta', fin.value)">
+      </label>
+      @if (desde() || hasta()) {
+        <button type="button" class="btn btn--ghost" (click)="limpiarFechas()">Todo el historial</button>
+      }
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="alert alert--danger" role="alert">{{ error() }}</div>
+  }
+
+  @if (!tiendas().length && !cargando() && !error()) {
+    <div class="empty">
+      <h3>Aún no tienes tiendas</h3>
+      <p>Crea una tienda para empezar a recibir calificaciones.</p>
+    </div>
+  }
+
+  @if (datos(); as d) {
+    <div class="contenido" [class.contenido--cargando]="cargando()" [attr.aria-busy]="cargando()">
+      <section class="kpis" aria-label="Indicadores de satisfacción">
+        <article class="kpi kpi--pending">
+          <div class="kpi__label">Calificación promedio</div>
+          <div class="kpi__value">
+            {{ d.promedio === null ? '—' : d.promedio.toFixed(1) }}<small class="sobre-cinco"> / 5</small>
+          </div>
+          <div class="estrellas" role="img" [attr.aria-label]="'Promedio ' + (d.promedio ?? 0) + ' de 5'">
+            @for (e of estrellas; track e) {
+              <span [class.llena]="e <= (d.promedio ?? 0) + 0.25">★</span>
+            }
+          </div>
+        </article>
+        <article class="kpi kpi--brand">
+          <div class="kpi__label">Reseñas recibidas</div>
+          <div class="kpi__value">{{ d.total }}</div>
+          <div class="kpi__foot">{{ d.ultimas_resenas.length }} con comentario recientes</div>
+        </article>
+        <article class="kpi kpi--money">
+          <div class="kpi__label">Reseñas positivas</div>
+          <div class="kpi__value">{{ d.sentimiento.positivas.porcentaje }}%</div>
+          <div class="kpi__foot">{{ d.sentimiento.positivas.cantidad }} con 4 o 5 estrellas</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi__label">Tasa de respuesta</div>
+          <div class="kpi__value">{{ d.tasa_respuesta.porcentaje }}%</div>
+          <div class="kpi__foot">
+            {{ d.tasa_respuesta.pedidos_calificados }} de {{ d.tasa_respuesta.pedidos_entregados }}
+            pedidos entregados calificados
+          </div>
+        </article>
+      </section>
+
+      @if (d.total === 0) {
+        <div class="empty">
+          <h3>Sin calificaciones en este periodo</h3>
+          <p>Cuando tus clientes califiquen pedidos entregados, verás aquí el análisis.</p>
+        </div>
+      } @else {
+        <section class="rejilla">
+          <article class="card">
+            <header class="card__header"><h2 class="card__title">Distribución de calificaciones</h2></header>
+            <div class="card__body">
+              <ul class="distribucion">
+                @for (fila of d.distribucion.slice().reverse(); track fila.estrellas) {
+                  <li>
+                    <span class="distribucion__etiqueta">{{ fila.estrellas }} ★</span>
+                    <span class="barra" aria-hidden="true">
+                      <span class="barra__relleno" [style.width.%]="anchoBarra(fila.cantidad)"></span>
+                    </span>
+                    <span class="distribucion__valor">{{ fila.cantidad }} · {{ fila.porcentaje }}%</span>
+                  </li>
+                }
+              </ul>
+              <div class="sentimiento" role="img"
+                [attr.aria-label]="d.sentimiento.positivas.porcentaje + '% positivas, ' + d.sentimiento.neutras.porcentaje + '% neutras, ' + d.sentimiento.negativas.porcentaje + '% negativas'">
+                <span class="sentimiento__tramo sentimiento__tramo--positiva" [style.width.%]="d.sentimiento.positivas.porcentaje"></span>
+                <span class="sentimiento__tramo sentimiento__tramo--neutra" [style.width.%]="d.sentimiento.neutras.porcentaje"></span>
+                <span class="sentimiento__tramo sentimiento__tramo--negativa" [style.width.%]="d.sentimiento.negativas.porcentaje"></span>
+              </div>
+              <ul class="leyenda">
+                <li><span class="punto punto--positiva"></span>Positivas {{ d.sentimiento.positivas.porcentaje }}%</li>
+                <li><span class="punto punto--neutra"></span>Neutras {{ d.sentimiento.neutras.porcentaje }}%</li>
+                <li><span class="punto punto--negativa"></span>Negativas {{ d.sentimiento.negativas.porcentaje }}%</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="card">
+            <header class="card__header"><h2 class="card__title">Tendencia mensual</h2></header>
+            <div class="card__body">
+              <ul class="tendencia">
+                @for (mes of d.tendencia_mensual; track mes.mes) {
+                  <li>
+                    <span class="tendencia__valor">{{ mes.promedio?.toFixed(1) }}</span>
+                    <span class="tendencia__columna" aria-hidden="true">
+                      <span class="tendencia__barra" [style.height.%]="alturaMes(mes)"></span>
+                    </span>
+                    <span class="tendencia__mes">{{ etiquetaMes(mes.mes) }}</span>
+                    <span class="tendencia__cantidad">{{ mes.cantidad }} reseñas</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </article>
+        </section>
+
+        <section class="rejilla">
+          <article class="card">
+            <header class="card__header"><h2 class="card__title">Productos mejor calificados</h2></header>
+            <div class="card__body">
+              <ol class="ranking">
+                @for (p of d.productos_mejor_calificados; track p.producto_id) {
+                  <li>
+                    <span class="ranking__nombre">{{ p.nombre }}</span>
+                    <span class="badge badge--success">★ {{ p.promedio?.toFixed(1) }}</span>
+                    <span class="ranking__cantidad">{{ p.cantidad }} reseñas</span>
+                  </li>
+                } @empty {
+                  <li class="vacio">Ningún producto llega a {{ d.minimo_resenas_ranking }} reseñas todavía.</li>
+                }
+              </ol>
+            </div>
+          </article>
+          <article class="card">
+            <header class="card__header"><h2 class="card__title">Productos con peor calificación</h2></header>
+            <div class="card__body">
+              <ol class="ranking">
+                @for (p of d.productos_peor_calificados; track p.producto_id) {
+                  <li>
+                    <span class="ranking__nombre">{{ p.nombre }}</span>
+                    <span class="badge badge--danger">★ {{ p.promedio?.toFixed(1) }}</span>
+                    <span class="ranking__cantidad">{{ p.cantidad }} reseñas</span>
+                  </li>
+                } @empty {
+                  <li class="vacio">Ningún producto llega a {{ d.minimo_resenas_ranking }} reseñas todavía.</li>
+                }
+              </ol>
+            </div>
+          </article>
+        </section>
+
+        <section class="card">
+          <header class="card__header resumen-cabecera">
+            <div>
+              <h2 class="card__title">Resumen de comentarios con IA</h2>
+              <p class="nota">Temas recurrentes y una recomendación, a partir de los comentarios del periodo.</p>
+            </div>
+            <button type="button" class="btn btn--primary" (click)="resumir()"
+              [disabled]="resumiendo() || !d.ultimas_resenas.length">
+              {{ resumiendo() ? 'Resumiendo…' : 'Resumir comentarios con IA' }}
+            </button>
+          </header>
+          <div class="card__body">
+            @if (errorResumen()) {
+              <div class="alert alert--danger" role="alert">{{ errorResumen() }}</div>
+            }
+            @if (resumenIa(); as r) {
+              <p class="resumen-texto">{{ r.resumen }}</p>
+              <div class="temas">
+                <div>
+                  <h3 class="temas__titulo temas__titulo--positivo">Lo que gusta</h3>
+                  <ul>
+                    @for (tema of r.temas_positivos; track $index) {
+                      <li>{{ tema }}</li>
+                    } @empty {
+                      <li class="vacio">Sin temas positivos recurrentes.</li>
+                    }
+                  </ul>
+                </div>
+                <div>
+                  <h3 class="temas__titulo temas__titulo--negativo">Lo que molesta</h3>
+                  <ul>
+                    @for (tema of r.temas_negativos; track $index) {
+                      <li>{{ tema }}</li>
+                    } @empty {
+                      <li class="vacio">Sin quejas recurrentes.</li>
+                    }
+                  </ul>
+                </div>
+              </div>
+              <div class="recomendacion">
+                <strong>Recomendación:</strong> {{ r.recomendacion }}
+              </div>
+              <p class="nota">Basado en {{ r.comentarios_analizados }} comentarios. Generado con IA: revísalo antes de decidir.</p>
+            } @else if (!resumiendo() && !errorResumen()) {
+              <p class="vacio">
+                {{ d.ultimas_resenas.length ? 'Pulsa el botón para generar el resumen.' : 'No hay comentarios escritos en este periodo.' }}
+              </p>
+            }
+          </div>
+        </section>
+
+        <section class="card">
+          <header class="card__header"><h2 class="card__title">Últimas reseñas con comentario</h2></header>
+          <ul class="resenas">
+            @for (r of d.ultimas_resenas; track r.id) {
+              <li>
+                <div class="resena__cabecera">
+                  <span class="estrellas" role="img" [attr.aria-label]="r.calificacion + ' de 5 estrellas'">
+                    @for (e of estrellas; track e) {
+                      <span [class.llena]="e <= r.calificacion">★</span>
+                    }
+                  </span>
+                  <span class="resena__meta">
+                    {{ r.cliente }} · {{ r.producto ?? 'Tienda en general' }} · {{ r.fecha | date: 'dd/MM/yyyy' }}
+                  </span>
+                </div>
+                <p class="resena__texto">{{ r.comentario }}</p>
+              </li>
+            } @empty {
+              <li class="vacio">No hay comentarios escritos en este periodo.</li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  } @else if (cargando()) {
+    <div class="skeleton cargando-bloque" aria-label="Cargando"></div>
+  }
+</main>

@@ -152,6 +152,12 @@ export const routes: Routes = [
       import('./features/tienda/tickets-soporte/tickets-tienda.component').then(m => m.TicketsTiendaComponent)
   },
   {
+    path: 'tiendas/satisfaccion',
+    canActivate: [empresaGuard],
+    loadComponent: () =>
+      import('./features/tienda/satisfaccion-clientes/satisfaccion-clientes.component').then(m => m.SatisfaccionClientesComponent)
+  },
+  {
     path: 'tiendas/campana-carrito',
     canActivate: [empresaGuard],
     loadComponent: () =>
