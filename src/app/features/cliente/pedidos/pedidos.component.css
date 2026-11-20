@@ -483,6 +483,7 @@
 }
 
 .stat-val {
+  --precio-detalle-size: 0.78rem;
   font-size: 1.05rem;
   font-weight: 700;
   color: #1e293b;

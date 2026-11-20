@@ -9,6 +9,8 @@ export interface VarianteProducto {
   sku: string;
   nombre: string;
   precio: string | number;
+  /** Precio fijado en dólares; si existe, `precio` (Bs) se recalcula con cada cotización oficial. */
+  precio_usd: string | number | null;
   precio_oferta: string | number | null;
   /** Solo lo devuelve la API de empresa; nunca la del catálogo público. */
   costo_unitario: string | number | null;
@@ -61,6 +63,7 @@ export interface Producto {
   en_stock?: boolean;
   // Campos de conveniencia basados en variante principal:
   precio?: number | string;
+  precio_usd?: number | string | null;
   costo_unitario?: number | string | null;
   stock?: number;
 }
@@ -68,7 +71,9 @@ export interface Producto {
 export interface CrearVariantePayload {
   sku: string;
   nombre?: string;
-  precio: number;
+  /** Obligatorio salvo que se mande `precio_usd`: entonces el servidor calcula los Bs. */
+  precio?: number;
+  precio_usd?: number | null;
   precio_oferta?: number | null;
   costo_unitario?: number | null;
   stock: number;

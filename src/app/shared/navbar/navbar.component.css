@@ -801,25 +801,49 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
+  background: var(--surface);
 }
 
 .moneda-selector button {
-  padding: 0.3rem 0.7rem;
+  min-width: 2.6rem;
+  padding: 0.35rem 0.7rem;
   border: 0;
-  background: var(--surface);
+  background: transparent;
   color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.moneda-selector button.active {
-  background: var(--primary);
+.moneda-selector button + button {
+  border-left: 1px solid var(--border);
+}
+
+.moneda-selector button[aria-pressed='true'] {
+  background: var(--ink);
   color: #fff;
 }
 
 .moneda-selector button:disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
 }
+
+.moneda-selector button:focus-visible {
+  outline: 2px solid var(--titicaca);
+  outline-offset: -2px;
+}
+
+.total-tc {
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
+.store-subtotal,
+.item-subtotal,
+.grand-total-amount {
+  --precio-detalle-justify: flex-end;
+  text-align: right;
+}
+

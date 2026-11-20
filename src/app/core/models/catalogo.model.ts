@@ -3,6 +3,8 @@ export interface VarianteCatalogo {
   nombre: string;
   sku: string;
   precio: string;
+  /** Precio fijado en dólares; `precio` es su equivalente en Bs con la cotización de hoy. */
+  precio_usd: string | null;
   precio_oferta: string | null;
   stock: number;
   activa: boolean;
@@ -22,6 +24,8 @@ export interface ProductoCatalogo {
   variantes: VarianteCatalogo[];
   sku?: string;
   precio_base?: string;
+  /** Precio en dólares de la variante más barata, si está fijada en dólares. */
+  precio_base_usd?: string | null;
   tienda_id?: number;
   tienda_nombre?: string;
   tienda_slug?: string;

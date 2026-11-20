@@ -90,15 +90,15 @@
           <div class="moneda-selector" role="group" aria-label="Moneda de los precios">
             <button
               type="button"
-              [class.active]="!monedaService.mostrarUsd()"
+              aria-label="Ver precios en bolivianos"
               [attr.aria-pressed]="!monedaService.mostrarUsd()"
               (click)="monedaService.elegir('BOB')">Bs</button>
             <button
               type="button"
-              [class.active]="monedaService.mostrarUsd()"
+              [attr.aria-label]="monedaService.usdDisponible() ? 'Ver precios en dólares' : 'Dólares no disponibles: no hay tipo de cambio oficial cargado'"
               [attr.aria-pressed]="monedaService.mostrarUsd()"
               [disabled]="!monedaService.usdDisponible()"
-              [title]="monedaService.usdDisponible() ? 'Ver precios en dolares' : 'Sin cotizacion disponible'"
+              [title]="monedaService.usdDisponible() ? 'Ver precios en dólares' : 'No hay tipo de cambio oficial cargado'"
               (click)="monedaService.elegir('USD')">USD</button>
           </div>
         }
@@ -205,7 +205,7 @@
                 <div class="cart-store-group">
                   <div class="cart-store-header">
                     <strong>{{ tiendaCart.tienda_nombre }}</strong>
-                    <span class="store-subtotal">Subtotal: <app-precio [bs]="tiendaCart.total" /></span>
+                    <span class="store-subtotal">Subtotal: <app-precio [bs]="tiendaCart.total" [secundaria]="false" /></span>
                   </div>
 
                   <div class="cart-items-list">
@@ -222,7 +222,7 @@
                           @if (item.variante_nombre) {
                             <p class="item-variant">Variante: <span>{{ item.variante_nombre }}</span></p>
                           }
-                          <div class="item-price"><app-precio [bs]="item.precio_unitario" /> c/u</div>
+                          <div class="item-price"><app-precio [bs]="item.precio_unitario" [secundaria]="false" /> c/u</div>
 
                           <div class="item-actions-row">
                             <div class="quantity-picker">
@@ -231,7 +231,7 @@
                               <button type="button" class="btn-qty" (click)="incrementar(item)" title="Aumentar" aria-label="Aumentar cantidad">+</button>
                             </div>
 
-                            <div class="item-subtotal"><app-precio [bs]="item.subtotal" /></div>
+                            <div class="item-subtotal"><app-precio [bs]="item.subtotal" [secundaria]="false" /></div>
 
                             <button type="button" class="btn-remove-item" (click)="eliminar(item.id)" title="Eliminar del carrito" aria-label="Eliminar producto">
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -259,6 +259,7 @@
               <span>Total a pagar:</span>
               <span class="grand-total-amount"><app-precio [bs]="cart.total_global" /></span>
             </div>
+            <app-tc-nota class="total-tc" />
 
             @if (checkoutError) {
               <div class="checkout-error-alert">

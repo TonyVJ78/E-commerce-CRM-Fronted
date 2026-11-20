@@ -15,6 +15,7 @@ import { Subscription } from 'rxjs';
 import { MensajeChat, ProductoCatalogo } from '../../core/models';
 import { ChatbotService } from '../../core/services/chatbot.service';
 import { MarkdownComponent } from '../markdown/markdown.component';
+import { PrecioComponent } from '../precio/precio.component';
 
 /** API de dictado del navegador (Chrome/Edge la exponen con prefijo `webkit`). */
 type Reconocimiento = {
@@ -46,7 +47,7 @@ const IMAGEN_RESPALDO =
 @Component({
   selector: 'app-chatbot',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MarkdownComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MarkdownComponent, PrecioComponent],
   templateUrl: './chatbot.component.html',
   styleUrls: ['./chatbot.component.css']
 })
@@ -264,6 +265,15 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
     const precios = (producto.variantes || []).map(v => Number(v.precio_oferta ?? v.precio));
     const minimo = precios.length ? Math.min(...precios) : Number(producto.precio_base || 0);
     return minimo.toFixed(2);
+  }
+
+  /** Dólares de la variante más barata, salvo que lo más barato sea una oferta (fijada en Bs). */
+  precioUsd(producto: ProductoCatalogo): string | null {
+    const variantes = producto.variantes || [];
+    if (!variantes.length) return producto.precio_base_usd ?? null;
+    const masBarata = variantes.reduce((a, b) =>
+      Number(b.precio_oferta ?? b.precio) < Number(a.precio_oferta ?? a.precio) ? b : a);
+    return masBarata.precio_oferta === null ? masBarata.precio_usd : null;
   }
 
   enOferta(producto: ProductoCatalogo): boolean {

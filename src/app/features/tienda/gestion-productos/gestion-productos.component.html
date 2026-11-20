@@ -176,11 +176,18 @@
               </div>
 
               <div class="field-item">
-                <label class="field-label">Precio Unitario (Bs.) <span class="required">*</span></label>
-                <div class="price-input-wrapper">
-                  <span class="price-prefix">Bs.</span>
-                  <input type="number" step="0.01" min="0.01" class="field-input price-input" formControlName="precio" placeholder="0.00">
-                </div>
+                <label class="field-label">Precio unitario <span class="required">*</span></label>
+                <app-moneda-precio [grupo]="editForm" [precioMin]="0.01">
+                  <div class="price-input-wrapper">
+                    @if (editForm.value.moneda_precio === 'USD') {
+                      <span class="price-prefix">US$</span>
+                      <input type="number" step="0.01" min="0.01" class="field-input price-input" formControlName="precio_usd" placeholder="0.00">
+                    } @else {
+                      <span class="price-prefix">Bs.</span>
+                      <input type="number" step="0.01" min="0.01" class="field-input price-input" formControlName="precio" placeholder="0.00">
+                    }
+                  </div>
+                </app-moneda-precio>
               </div>
 
               <div class="field-item">
@@ -493,7 +500,7 @@
 
                 <!-- Precio -->
                 <td class="col-price">
-                  <span class="price-value">{{ p.precio | currency:'Bs. ' }}</span>
+                  <span class="price-value"><app-precio [bs]="p.precio" [usd]="p.precio_usd" [secundaria]="false" /></span>
                 </td>
 
                 <!-- Stock con Status Pill y Dot Kantu -->

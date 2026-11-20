@@ -7,6 +7,7 @@ import { ProductoCatalogo, VarianteCatalogo } from '../../../core/models';
 import { CarritoService } from '../../../core/services/carrito.service';
 import { CatalogoService } from '../../../core/services/catalogo.service';
 import { PrecioComponent } from '../../../shared/precio/precio.component';
+import { TcNotaComponent } from '../../../shared/precio/tc-nota.component';
 
 const IMAGEN_RESPALDO =
   'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=900&q=80';
@@ -20,7 +21,7 @@ const IMAGEN_RESPALDO =
 @Component({
   selector: 'app-detalle-producto',
   standalone: true,
-  imports: [CommonModule, RouterLink, PrecioComponent],
+  imports: [CommonModule, RouterLink, PrecioComponent, TcNotaComponent],
   templateUrl: './detalle-producto.component.html',
   styleUrls: ['./detalle-producto.component.css']
 })
@@ -80,6 +81,13 @@ export class DetalleProductoComponent implements OnInit, OnDestroy {
   get precioActual(): string {
     const v = this.variante;
     return v ? (v.precio_oferta ?? v.precio) : (this.producto?.precio_base || '0.00');
+  }
+
+  /** La oferta está fijada en Bs: solo el precio normal puede venir fijado en dólares. */
+  get precioUsdActual(): string | null {
+    const v = this.variante;
+    if (!v) return this.producto?.precio_base_usd ?? null;
+    return v.precio_oferta === null ? v.precio_usd : null;
   }
 
   get precioAnterior(): string | null {

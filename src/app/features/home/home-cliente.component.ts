@@ -247,6 +247,11 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
     return producto.variantes && producto.variantes.length > 0 ? producto.variantes[0] : null;
   }
 
+  usdActual(producto: ProductoCatalogo): string | null {
+    const variante = this.obtenerVarianteActual(producto);
+    return variante ? variante.precio_usd : (producto.precio_base_usd ?? null);
+  }
+
   obtenerImagenProducto(producto: ProductoCatalogo): string {
     if (producto.imagen_principal) {
       return producto.imagen_principal;

@@ -12,13 +12,15 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { MargenProducto, calcularMargen } from '../../../core/models/producto.model';
+import { MonedaService } from '../../../core/services/moneda.service';
 import { Categoria, ProductoService } from '../../../core/services/producto.service';
 import { Tienda, TiendaService } from '../../../core/services/tienda.service';
+import { MonedaPrecioComponent } from '../../../shared/precio/moneda-precio.component';
 
 @Component({
   selector: 'app-create-producto',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MonedaPrecioComponent],
   templateUrl: './create-producto.component.html',
   styleUrls: ['./create-producto.component.css']
 })
@@ -38,7 +40,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
   private routeSubscription?: Subscription;
 
   /** Campos de la variante "única"; solo aplican cuando el producto NO tiene opciones. */
-  private readonly simpleVariantControls = ['codigo', 'precio', 'precio_oferta', 'costo_unitario', 'stock', 'stock_minimo'];
+  private readonly simpleVariantControls = ['codigo', 'moneda_precio', 'precio', 'precio_usd', 'precio_oferta', 'costo_unitario', 'stock', 'stock_minimo'];
 
   readonly acceptedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
   readonly maxImageSize = 5 * 1024 * 1024;
@@ -48,7 +50,8 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private productoService: ProductoService,
-    private tiendaService: TiendaService
+    private tiendaService: TiendaService,
+    private moneda: MonedaService
   ) {
     this.productForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(150)]],
@@ -58,7 +61,9 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
       activo: [true],
       tieneOpciones: [false],
       codigo: ['', [Validators.required, Validators.maxLength(60)]],
+      moneda_precio: ['BOB'],
       precio: [null, [Validators.required, Validators.min(0)]],
+      precio_usd: [null],
       precio_oferta: [null, Validators.min(0)],
       costo_unitario: [null, Validators.min(0)],
       stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
@@ -86,6 +91,10 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
 
   get variants(): FormArray {
     return this.productForm.get('variantes') as FormArray;
+  }
+
+  get variantGroups(): FormGroup[] {
+    return this.variants.controls as FormGroup[];
   }
 
   get hasOptions(): boolean {
@@ -118,7 +127,9 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     return this.fb.group({
       nombre: ['', Validators.required],
       sku: ['', [Validators.required, Validators.maxLength(60)]],
+      moneda_precio: ['BOB'],
       precio: [null, [Validators.required, Validators.min(0)]],
+      precio_usd: [null],
       precio_oferta: [null, Validators.min(0)],
       costo_unitario: [null, Validators.min(0)],
       stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
@@ -220,7 +231,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
   }
 
   margen(control: AbstractControl): MargenProducto | null {
-    return calcularMargen(control.get('precio')?.value, control.get('costo_unitario')?.value);
+    return calcularMargen(this.moneda.precioEnBs(control.value), control.get('costo_unitario')?.value);
   }
 
   variantStatus(index: number): string {
@@ -278,7 +289,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
       : [{
         sku: String(value.codigo).trim(),
         nombre: 'Unica',
-        precio: String(value.precio),
+        ...this.precioPayload(value),
         precio_oferta: value.precio_oferta === null || value.precio_oferta === '' ? null : String(value.precio_oferta),
         costo_unitario: value.costo_unitario === null || value.costo_unitario === '' ? null : String(value.costo_unitario),
         stock: Number(value.stock),
@@ -292,6 +303,12 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     return formData;
   }
 
+  private precioPayload(value: { moneda_precio: string; precio: unknown; precio_usd: unknown }): Record<string, string> {
+    return value.moneda_precio === 'USD'
+      ? { precio_usd: String(value.precio_usd) }
+      : { precio: String(value.precio) };
+  }
+
   private serializeVariant(control: AbstractControl): Record<string, unknown> {
     const value = control.value;
     const attributes: Record<string, string> = {};
@@ -302,7 +319,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     return {
       sku: String(value.sku).trim(),
       nombre: String(value.nombre).trim(),
-      precio: String(value.precio),
+      ...this.precioPayload(value),
       precio_oferta: value.precio_oferta === null || value.precio_oferta === '' ? null : String(value.precio_oferta),
       costo_unitario: value.costo_unitario === null || value.costo_unitario === '' ? null : String(value.costo_unitario),
       stock: Number(value.stock),
@@ -320,7 +337,7 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     this.setSimpleVariantEnabled(true);
     this.productForm.reset({
       nombre: '', descripcion: '', categoria_id: null, etiquetas: '', activo: true,
-      tieneOpciones: false, codigo: '', precio: null, precio_oferta: null, costo_unitario: null,
+      tieneOpciones: false, codigo: '', moneda_precio: 'BOB', precio: null, precio_usd: null, precio_oferta: null, costo_unitario: null,
       stock: 0, stock_minimo: 5
     });
   }
@@ -330,13 +347,21 @@ export class CreateProductoComponent implements OnInit, OnDestroy {
     this.previewObjectUrls = [];
   }
 
+  /** Los errores de las variantes llegan anidados: `{ variantes: [{ precio_usd: ['...'] }] }`. */
+  private flattenMessages(value: unknown): string[] {
+    if (typeof value === 'string') return [value];
+    if (Array.isArray(value)) return value.flatMap(item => this.flattenMessages(item));
+    if (value && typeof value === 'object') return Object.values(value).flatMap(item => this.flattenMessages(item));
+    return [];
+  }
+
   private readError(error: any): string {
     const payload = error?.error;
     if (typeof payload === 'string') return payload;
     if (payload?.detail) return Array.isArray(payload.detail) ? payload.detail.join(', ') : payload.detail;
     if (payload && typeof payload === 'object') {
       return Object.entries(payload)
-        .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+        .map(([field, messages]) => `${field}: ${this.flattenMessages(messages).join(', ')}`)
         .join(' | ');
     }
     return 'No se pudo registrar el producto. Intenta de nuevo.';

@@ -158,13 +158,19 @@ h1 {
   gap: 0.75rem;
 }
 
+.precio-tc {
+  margin-top: -0.25rem;
+}
+
 .precio-actual {
+  --precio-detalle-size: 0.9rem;
   font-size: 1.8rem;
   font-weight: 800;
   color: var(--primary);
 }
 
 .precio-anterior {
+  --precio-detalle-size: 0.8rem;
   font-size: 1.05rem;
   color: var(--text-secondary);
   text-decoration: line-through;

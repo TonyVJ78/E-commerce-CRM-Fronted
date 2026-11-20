@@ -8,11 +8,14 @@ import { TiendaService } from '../../../core/services/tienda.service';
 import { CarritoService } from '../../../core/services/carrito.service';
 import { MargenProducto, Producto, Tienda, VarianteProducto, calcularMargen } from '../../../core/models';
 import { MovimientoStock } from '../../../core/services/producto.service';
+import { MonedaService } from '../../../core/services/moneda.service';
+import { MonedaPrecioComponent } from '../../../shared/precio/moneda-precio.component';
+import { PrecioComponent } from '../../../shared/precio/precio.component';
 
 @Component({
   selector: 'app-gestion-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, MonedaPrecioComponent, PrecioComponent],
   templateUrl: './gestion-productos.component.html',
   styleUrls: ['./gestion-productos.component.css']
 })
@@ -59,10 +62,13 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   private readonly productoService = inject(ProductoService);
   private readonly tiendaService = inject(TiendaService);
   private readonly carritoService = inject(CarritoService);
+  private readonly moneda = inject(MonedaService);
 
   editForm: FormGroup = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(200)]],
+    moneda_precio: ['BOB'],
     precio: [0, [Validators.required, Validators.min(0.01)]],
+    precio_usd: [null as number | null],
     costo_unitario: [null as number | null, Validators.min(0)],
     categoria: [''],
     imagen_url: [''],
@@ -171,7 +177,9 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
 
     this.editForm.patchValue({
       nombre: producto.nombre,
+      moneda_precio: producto.precio_usd ? 'USD' : 'BOB',
       precio: producto.precio,
+      precio_usd: producto.precio_usd ? Number(producto.precio_usd) : null,
       costo_unitario: producto.costo_unitario === null || producto.costo_unitario === undefined ? null : Number(producto.costo_unitario),
       categoria: producto.categoria || '',
       imagen_url: currentImg || '',
@@ -180,7 +188,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   }
 
   get margenEdicion(): MargenProducto | null {
-    return calcularMargen(this.editForm.value.precio, this.editForm.value.costo_unitario);
+    return calcularMargen(this.moneda.precioEnBs(this.editForm.value), this.editForm.value.costo_unitario);
   }
 
   get margenVarianteInventario(): MargenProducto | null {
@@ -294,7 +302,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
 
     const tiendaId = this.productoEnEdicion.tienda || this.tiendaSeleccionadaId || 0;
     const productoId = this.productoEnEdicion.id;
-    const { stock: _stockIgnorado, ...datosModificados } = this.editForm.value;
+    const { stock: _stockIgnorado, moneda_precio: _monedaPrecio, ...datosModificados } = this.editForm.value;
 
     this.productoService.actualizar(tiendaId, productoId, datosModificados).subscribe({
       next: (prodActualizado) => {
@@ -307,7 +315,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
             ...this.productos[idx],
             ...prodActualizado,
             nombre: datosModificados.nombre,
-            precio: datosModificados.precio,
+            precio: Number(prodActualizado.precio),
             costo_unitario: datosModificados.costo_unitario,
             descripcion: datosModificados.descripcion,
             categoria: datosModificados.categoria,
@@ -319,7 +327,7 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.cargando = false;
-        this.mensajeError = err.error?.detail || 'Error al guardar los cambios del producto.';
+        this.mensajeError = err.error?.detail || err.error?.precio_usd || 'Error al guardar los cambios del producto.';
       }
     });
   }

@@ -9,13 +9,14 @@ import { CarritoService, CheckoutResponse } from '../../core/services/carrito.se
 import { ItemCarritoDetalle } from '../../core/models/carrito.model';
 import { MonedaService } from '../../core/services/moneda.service';
 import { PrecioComponent } from '../precio/precio.component';
+import { TcNotaComponent } from '../precio/tc-nota.component';
 
 export type MetodoPago = 'efectivo' | 'stripe';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, PrecioComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, PrecioComponent, TcNotaComponent],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css']
 })

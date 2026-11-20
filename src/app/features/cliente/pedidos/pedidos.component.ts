@@ -7,11 +7,12 @@ import {
   PedidosClienteService,
 } from '../../../core/services/pedidos-cliente.service';
 import { PrecioComponent } from '../../../shared/precio/precio.component';
+import { TcNotaComponent } from '../../../shared/precio/tc-nota.component';
 
 @Component({
   selector: 'app-pedidos-cliente',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, PrecioComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, PrecioComponent, TcNotaComponent],
   templateUrl: './pedidos.component.html',
   styleUrls: ['./pedidos.component.css'],
 })

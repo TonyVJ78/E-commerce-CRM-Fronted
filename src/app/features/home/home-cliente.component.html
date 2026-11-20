@@ -250,7 +250,7 @@
           <!-- Precio y Disponibilidad -->
           <div class="card-pricing">
             <div class="price-box">
-              <app-precio class="price-amount" [bs]="obtenerVarianteActual(producto)?.precio || producto.precio_base || '0.00'" />
+              <app-precio class="price-amount" [bs]="obtenerVarianteActual(producto)?.precio || producto.precio_base || '0.00'" [usd]="usdActual(producto)" />
             </div>
 
             <div class="stock-status" [class.out-of-stock]="(obtenerVarianteActual(producto)?.stock || 0) <= 0">
@@ -292,7 +292,7 @@
         <small>{{ producto.tienda_nombre }}<span *ngIf="producto.categoria_nombre"> · {{ producto.categoria_nombre }}</span></small>
         <h2>{{ producto.nombre }}</h2>
         <p>{{ producto.descripcion || 'Producto disponible en el catálogo de esta tienda.' }}</p>
-        <strong>Desde <app-precio [bs]="producto.precio_base || obtenerVarianteActual(producto)?.precio || '0.00'" /></strong>
+        <strong>Desde <app-precio [bs]="producto.precio_base || obtenerVarianteActual(producto)?.precio || '0.00'" [usd]="producto.precio_base_usd" /></strong>
         <button type="button" class="btn-add-cart" (click)="agregarAlCarrito(producto)">
           Agregar al carrito
         </button>

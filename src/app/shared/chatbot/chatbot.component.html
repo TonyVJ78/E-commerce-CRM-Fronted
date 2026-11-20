@@ -58,7 +58,7 @@
             <span class="producto-nombre">{{ p.nombre }}</span>
             <span class="producto-tienda" *ngIf="p.tienda_nombre">{{ p.tienda_nombre }}</span>
             <span class="producto-precio">
-              Bs {{ precio(p) }}
+              <app-precio [bs]="precio(p)" [usd]="precioUsd(p)" [secundaria]="false" />
               <span class="badge-oferta" *ngIf="enOferta(p)">Oferta</span>
             </span>
           </div>
