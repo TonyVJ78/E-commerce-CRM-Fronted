@@ -18,7 +18,7 @@ let siguienteId = 0;
   imports: [TcNotaComponent],
   template: `
     <div class="mp-fila">
-      <span class="mp-etiqueta" [id]="id + '-etiqueta'">Moneda del precio</span>
+      <span class="mp-etiqueta" [id]="id + '-etiqueta'">Fijar precio en</span>
       <div class="mp-opciones" role="group" [attr.aria-labelledby]="id + '-etiqueta'">
         <button type="button" [attr.aria-pressed]="!enUsd()" (click)="elegir('BOB')">Bs</button>
         <button
@@ -32,7 +32,7 @@ let siguienteId = 0;
     <ng-content />
     @if (!moneda.usdDisponible() && !enUsd()) {
       <small class="mp-nota" [id]="id + '-aviso'">
-        No hay tipo de cambio oficial cargado: el precio solo se puede fijar en Bs.
+        No hay cotización USD disponible: el precio solo se puede fijar en Bs.
       </small>
     }
     @if (enUsd()) {
@@ -70,7 +70,8 @@ let siguienteId = 0;
       background: var(--surface);
     }
     .mp-opciones button {
-      min-width: 2.75rem;
+      min-width: 3rem;
+      min-height: 40px;
       padding: 0.3rem 0.7rem;
       border: 0;
       background: transparent;

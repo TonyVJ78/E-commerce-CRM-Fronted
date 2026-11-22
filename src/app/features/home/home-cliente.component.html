@@ -12,7 +12,7 @@
       <div class="search-bar-wrapper">
         <input
           type="text"
-          class="search-input"
+          class="search-input" aria-label="Buscar productos en el catálogo"
           placeholder="Busca por producto, café, aguayo, cerámica..."
           [ngModel]="terminoBusqueda"
           (ngModelChange)="onBusquedaInput($event)"
@@ -38,11 +38,11 @@
       <!-- Barra de Control: Ordenamiento y Botón de Filtros Avanzados -->
       <div class="filter-controls-bar">
         <div class="controls-left">
-          <button type="button" class="btn-toggle-filters" [class.active]="panelFiltrosAbierto" (click)="togglePanelFiltros()">
+          <button type="button" class="btn-toggle-filters" [attr.aria-expanded]="panelFiltrosAbierto" aria-controls="catalog-filters" [class.active]="panelFiltrosAbierto" (click)="togglePanelFiltros()">
             <span>Filtros avanzados</span>
             <span class="filter-badge" *ngIf="cantidadFiltrosActivos > 0">{{ cantidadFiltrosActivos }}</span>
           </button>
-          <span class="results-count-text">{{ productos.length }} productos encontrados</span>
+          <span class="results-count-text" role="status">{{ productos.length }} {{ productos.length === 1 ? "producto encontrado" : "productos encontrados" }}</span>
         </div>
 
         <div class="controls-right">
@@ -58,7 +58,7 @@
       </div>
 
       <!-- Panel Desplegable de Filtros Dinámicos -->
-      <div class="filters-drawer" *ngIf="panelFiltrosAbierto">
+      <div id="catalog-filters" class="filters-drawer" *ngIf="panelFiltrosAbierto">
         <div class="drawer-grid">
           <!-- Rango de Precios -->
           <div class="drawer-column">
@@ -205,13 +205,10 @@
       <article
         class="product-card"
         *ngFor="let producto of productos"
-        role="button"
-        tabindex="0"
-        (click)="abrirProducto(producto)"
-        (keydown.enter)="abrirProducto(producto)"
+
       >
         <!-- Imagen y Badges -->
-        <div class="card-media">
+        <a class="card-media" [routerLink]="['/producto', producto.id]" (click)="registrarAccesoFicha(producto)" [attr.aria-label]="'Ver detalles de ' + producto.nombre">
           <img
             [src]="obtenerImagenProducto(producto)"
             [alt]="producto.nombre"
@@ -224,22 +221,23 @@
           <span class="badge-category" *ngIf="producto.categoria_nombre">
             {{ producto.categoria_nombre }}
           </span>
-        </div>
+        </a>
 
         <!-- Contenido de la Tarjeta -->
         <div class="card-body">
-          <h3 class="product-title" [title]="producto.nombre">{{ producto.nombre }}</h3>
+          <h3 class="product-title"><a [routerLink]="['/producto', producto.id]" (click)="registrarAccesoFicha(producto)">{{ producto.nombre }}</a></h3>
           <p class="product-desc" *ngIf="producto.descripcion">{{ producto.descripcion }}</p>
 
           <!-- Selector de Variantes (si tiene más de una) -->
           <div class="variants-selector" *ngIf="producto.variantes && producto.variantes.length > 1">
-            <label class="variant-label">Opciones:</label>
+            <span class="variant-label">Elige una opción</span>
             <div class="variant-options">
               <button
                 type="button"
                 class="variant-btn"
                 *ngFor="let v of producto.variantes"
                 [class.selected]="obtenerVarianteActual(producto)?.id === v.id"
+                [attr.aria-pressed]="obtenerVarianteActual(producto)?.id === v.id"
                 (click)="$event.stopPropagation(); seleccionarVariante(producto.id, v)"
               >
                 {{ v.nombre_variante || v.nombre }}
@@ -250,7 +248,7 @@
           <!-- Precio y Disponibilidad -->
           <div class="card-pricing">
             <div class="price-box">
-              <app-precio class="price-amount" [bs]="obtenerVarianteActual(producto)?.precio || producto.precio_base || '0.00'" [usd]="usdActual(producto)" />
+              <app-precio class="price-amount" [bs]="precioActual(producto)" [usd]="usdActual(producto)" [contextoCatalogo]="true" [brl]="brlActual(producto)" />
             </div>
 
             <div class="stock-status" [class.out-of-stock]="(obtenerVarianteActual(producto)?.stock || 0) <= 0">
@@ -264,7 +262,8 @@
             </div>
           </div>
 
-          <!-- Botón Agregar al Carrito -->
+          <a class="link-details" [routerLink]="['/producto', producto.id]" (click)="registrarAccesoFicha(producto)">Ver detalles y variantes <span aria-hidden="true">→</span></a>
+          <!-- Botón Agregar al carrito -->
           <button
             type="button"
             class="btn-add-cart"
@@ -275,7 +274,7 @@
               Agregando...
             </span>
             <span *ngIf="agregandoVarianteId !== obtenerVarianteActual(producto)?.id">
-              Agregar al Carrito
+              Agregar al carrito
             </span>
           </button>
         </div>
@@ -285,14 +284,16 @@
 
   <!-- Modal Diálogo de Detalle del Producto -->
   <div class="product-detail-backdrop" *ngIf="productoEnDetalle as producto" (click)="cerrarDetalle()">
-    <section class="product-detail-dialog" role="dialog" aria-modal="true" [attr.aria-label]="producto.nombre" (click)="$event.stopPropagation()">
+    <section class="product-detail-dialog" appDialogFocus (dialogEscape)="cerrarDetalle()" role="dialog" aria-modal="true" [attr.aria-label]="producto.nombre" (click)="$event.stopPropagation()">
       <button type="button" class="detail-close" (click)="cerrarDetalle()" aria-label="Cerrar detalle">X</button>
       <img [src]="obtenerImagenProducto(producto)" [alt]="producto.nombre" />
       <div class="detail-copy">
         <small>{{ producto.tienda_nombre }}<span *ngIf="producto.categoria_nombre"> · {{ producto.categoria_nombre }}</span></small>
         <h2>{{ producto.nombre }}</h2>
         <p>{{ producto.descripcion || 'Producto disponible en el catálogo de esta tienda.' }}</p>
-        <strong>Desde <app-precio [bs]="producto.precio_base || obtenerVarianteActual(producto)?.precio || '0.00'" [usd]="producto.precio_base_usd" /></strong>
+        <p class="quick-variant">Opción seleccionada: {{ obtenerVarianteActual(producto)?.nombre }}</p>
+        <strong><app-precio [bs]="precioActual(producto)" [usd]="usdActual(producto)" [contextoCatalogo]="true" [brl]="brlActual(producto)" /></strong>
+        <a class="link-details" [routerLink]="['/producto', producto.id]" (click)="cerrarDetalle()">Ver detalles y elegir otra opción →</a>
         <button type="button" class="btn-add-cart" (click)="agregarAlCarrito(producto)">
           Agregar al carrito
         </button>

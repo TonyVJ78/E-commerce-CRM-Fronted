@@ -91,7 +91,7 @@
 
           <div class="order-card-bottom">
             <time class="order-date">{{ pedido.fecha | date:'d MMM y, HH:mm' }}</time>
-            <span class="order-amount"><app-precio [bs]="pedido.total" [tipoCambio]="pedido.tipo_cambio_usd" /></span>
+            <span class="order-amount"><app-precio [bs]="pedido.total" [tipoCambio]="pedido.tipo_cambio_usd" [historico]="true" /></span>
           </div>
         </button>
       </div>
@@ -142,11 +142,11 @@
             </div>
             <div class="stat-box">
               <span class="stat-label">Subtotal</span>
-              <span class="stat-val"><app-precio [bs]="pedido.subtotal" [tipoCambio]="pedido.tipo_cambio_usd" /></span>
+              <span class="stat-val"><app-precio [bs]="pedido.subtotal" [tipoCambio]="pedido.tipo_cambio_usd" [historico]="true" /></span>
             </div>
             <div class="stat-box stat-highlight">
               <span class="stat-label">Total Pagado</span>
-              <span class="stat-val total-price"><app-precio [bs]="pedido.total" [tipoCambio]="pedido.tipo_cambio_usd" /></span>
+              <span class="stat-val total-price"><app-precio [bs]="pedido.total" [tipoCambio]="pedido.tipo_cambio_usd" [historico]="true" /></span>
               @if (pedido.tipo_cambio_usd) {
                 <app-tc-nota [tasa]="pedido.tipo_cambio_usd" />
               }
@@ -196,8 +196,8 @@
                   </td>
                   <td><span class="variant-chip">{{ item.variante_nombre }}</span></td>
                   <td class="text-center"><strong>{{ item.cantidad }}</strong></td>
-                  <td class="text-right"><app-precio [bs]="item.precio_unitario" [tipoCambio]="pedido.tipo_cambio_usd" [secundaria]="false" /></td>
-                  <td class="text-right item-subtotal"><app-precio [bs]="item.subtotal" [tipoCambio]="pedido.tipo_cambio_usd" [secundaria]="false" /></td>
+                  <td class="text-right"><app-precio [bs]="item.precio_unitario" [tipoCambio]="pedido.tipo_cambio_usd" [historico]="true" [secundaria]="false" /></td>
+                  <td class="text-right item-subtotal"><app-precio [bs]="item.subtotal" [tipoCambio]="pedido.tipo_cambio_usd" [historico]="true" [secundaria]="false" /></td>
                 </tr>
               </tbody>
             </table>

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import {
@@ -14,11 +15,12 @@ import { CarritoService } from '../../core/services/carrito.service';
 import { RecomendacionService } from '../../core/services/recomendacion.service';
 import { RecomendacionesComponent } from './recomendaciones/recomendaciones.component';
 import { PrecioComponent } from '../../shared/precio/precio.component';
+import { DialogFocusDirective } from '../../shared/dialog-focus.directive';
 
 @Component({
   selector: 'app-home-cliente',
   standalone: true,
-  imports: [CommonModule, FormsModule, RecomendacionesComponent, PrecioComponent],
+  imports: [CommonModule, FormsModule, RouterLink, RecomendacionesComponent, PrecioComponent, DialogFocusDirective],
   templateUrl: './home-cliente.component.html',
   styleUrls: ['./home-cliente.component.css']
 })
@@ -247,9 +249,19 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
     return producto.variantes && producto.variantes.length > 0 ? producto.variantes[0] : null;
   }
 
+  precioActual(producto: ProductoCatalogo): string {
+    const variante = this.obtenerVarianteActual(producto);
+    return variante?.precio_oferta ?? variante?.precio ?? producto.precio_base ?? '0.00';
+  }
+
   usdActual(producto: ProductoCatalogo): string | null {
     const variante = this.obtenerVarianteActual(producto);
-    return variante ? variante.precio_usd : (producto.precio_base_usd ?? null);
+    return variante ? (variante.precio_oferta != null ? null : variante.precio_usd) : (producto.precio_base_usd ?? null);
+  }
+
+  brlActual(producto: ProductoCatalogo) {
+    const variante = this.obtenerVarianteActual(producto);
+    return variante ? (variante.visualizacion_brl ?? null) : (producto.visualizacion_brl ?? null);
   }
 
   obtenerImagenProducto(producto: ProductoCatalogo): string {
@@ -271,6 +283,11 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
    * No bloquea la apertura modal ni la navegación.
    */
   abrirProducto(producto: ProductoCatalogo, registrarClick = true): void {
+    this.registrarAccesoFicha(producto, registrarClick);
+    this.productoEnDetalle = producto;
+  }
+
+  registrarAccesoFicha(producto: ProductoCatalogo, registrarClick = true): void {
     const tiendaId = producto.tienda_id;
     if (tiendaId) {
       if (registrarClick) {
@@ -286,7 +303,6 @@ export class HomeClienteComponent implements OnInit, OnDestroy {
         tipo_interaccion: 'VIEW'
       });
     }
-    this.productoEnDetalle = producto;
   }
 
   cerrarDetalle(): void {

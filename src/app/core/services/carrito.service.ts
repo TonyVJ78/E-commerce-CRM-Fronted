@@ -33,6 +33,7 @@ export interface IntentoPagoStripe {
   publishable_key: string;
   monto_bs: string;
   monto_usd: string;
+  tipo_cambio_usd: string;
 }
 
 export type {

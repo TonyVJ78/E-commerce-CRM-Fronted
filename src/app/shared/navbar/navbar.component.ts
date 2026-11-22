@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, inject, computed } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
@@ -47,6 +47,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   cargandoStripe = false;
   pagandoStripe = false;
   stripeError: string | null = null;
+  importeStripe: { bs: string; usd: string; tasa: string } | null = null;
 
   private stripe: Stripe | null = null;
   private elements: StripeElements | null = null;
@@ -82,6 +83,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.resetPagoStripe();
     this.setCartOpen(false);
     this.subs.unsubscribe();
+  }
+
+  @HostListener('document:keydown.escape')
+  cerrarMenuConEscape(): void {
+    if (!this.menuOpen) return;
+    this.menuOpen = false;
+    document.querySelector<HTMLButtonElement>('.menu-toggle')?.focus();
   }
 
   toggleMenu(): void {
@@ -169,6 +177,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       if (!stripe) {
         throw new Error('No se pudo inicializar la pasarela de pagos Stripe.');
       }
+      this.importeStripe = { bs: intento.monto_bs, usd: intento.monto_usd, tasa: intento.tipo_cambio_usd };
       return { stripe, clientSecret: intento.client_secret };
     });
 
@@ -218,6 +227,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
    * Evita memory leaks, iframes huérfanos o colisiones al reabrir el drawer.
    */
   private resetPagoStripe(): void {
+    this.importeStripe = null;
     this.metodoPago = 'efectivo';
     if (this.paymentElement) {
       try {

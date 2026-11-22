@@ -18,6 +18,34 @@
       <span class="brand-text">Kantu <span class="brand-accent">Market</span></span>
     </a>
 
+    <div class="currency-tools">
+        <!-- BRL solo consulta catálogo; no cambia moneda del carrito ni del pago. -->
+        @if (puedeComprar() || monedaService.brlPreparado()) {
+          <span class="currency-label">Moneda de consulta</span>
+          <div class="moneda-selector" role="group" aria-label="Moneda de los precios">
+            <button
+              type="button"
+              aria-label="Ver precios en bolivianos"
+              [attr.aria-pressed]="!monedaService.mostrarUsd() && !monedaService.mostrarBrl()"
+              (click)="monedaService.elegir('BOB')">Bs</button>
+            <button
+              type="button"
+              [attr.aria-label]="monedaService.usdDisponible() ? 'Ver precios en dólares' : 'Dólares no disponibles: no hay tipo de cambio oficial cargado'"
+              [attr.aria-pressed]="monedaService.mostrarUsd()"
+              [disabled]="!monedaService.usdDisponible()"
+              [title]="monedaService.usdDisponible() ? 'Ver precios en dólares' : 'No hay tipo de cambio oficial cargado'"
+              (click)="monedaService.elegir('USD')">USD</button>
+            @if (monedaService.brlPreparado()) {
+              <button type="button" aria-label="Ver catálogo en reales brasileños"
+                [attr.aria-pressed]="monedaService.mostrarBrl()"
+                [disabled]="!monedaService.brlDisponible()"
+                title="Equivalencia indicativa del catálogo; carrito en Bs y tarjeta en USD"
+                (click)="monedaService.elegir('BRL')">BRL</button>
+            }
+          </div>
+        }
+    </div>
+
     <!-- Acciones en barra movil (Carrito y Toggle) -->
     <div class="navbar-actions-mobile">
       @if (puedeComprar()) {
@@ -36,7 +64,7 @@
         </button>
       }
 
-      <button class="menu-toggle" (click)="toggleMenu()" [class.active]="menuOpen" aria-label="Menu principal">
+      <button class="menu-toggle" (click)="toggleMenu()" [class.active]="menuOpen" [attr.aria-expanded]="menuOpen" aria-controls="kantu-navigation" aria-label="Menú principal">
         <span></span>
         <span></span>
         <span></span>
@@ -44,37 +72,38 @@
     </div>
 
     <!-- Navegacion Principal -->
-    <nav class="navbar-menu" [class.open]="menuOpen" aria-label="Navegacion principal">
+    <nav id="kantu-navigation" class="navbar-menu" [class.open]="menuOpen" aria-label="Navegacion principal">
+
       @if (currentUser(); as user) {
         <!-- Enlaces para Clientes -->
         @if (user.rol === 'cliente') {
-          <a routerLink="/inicio" routerLinkActive="active" (click)="menuOpen = false">Catalogo</a>
-          <a routerLink="/pedidos" routerLinkActive="active" (click)="menuOpen = false">Mis Pedidos</a>
-          <a routerLink="/cliente/soporte" routerLinkActive="active" (click)="menuOpen = false">Soporte y Reclamos</a>
+          <a routerLink="/inicio" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Catálogo</a>
+          <a routerLink="/pedidos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Mis Pedidos</a>
+          <a routerLink="/cliente/soporte" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Soporte y Reclamos</a>
         }
 
         <!-- Enlaces para Empresas / Vendedores -->
         @if (user.rol === 'empresa') {
-          <a routerLink="/panel-vendedor" routerLinkActive="active" (click)="menuOpen = false">Panel Vendedor</a>
-          <a routerLink="/tiendas" routerLinkActive="active" (click)="menuOpen = false">Mis Tiendas</a>
-          <a routerLink="/tiendas/productos" routerLinkActive="active" (click)="menuOpen = false">Inventario</a>
-          <a routerLink="/tiendas/pedidos" routerLinkActive="active" (click)="menuOpen = false">Pedidos Recibidos</a>
-          <a routerLink="/tiendas/tickets" routerLinkActive="active" (click)="menuOpen = false">Atencion al Cliente</a>
-          <a routerLink="/tiendas/campana-carrito" routerLinkActive="active" (click)="menuOpen = false">Recuperacion Carrito</a>
-          <a routerLink="/tiendas/clientes/segmentacion" routerLinkActive="active" (click)="menuOpen = false">Segmentación de Clientes</a>
+          <a routerLink="/panel-vendedor" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Panel Vendedor</a>
+          <a routerLink="/tiendas" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Mis Tiendas</a>
+          <a routerLink="/tiendas/productos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Inventario</a>
+          <a routerLink="/tiendas/pedidos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Pedidos Recibidos</a>
+          <a routerLink="/tiendas/tickets" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Atención al cliente</a>
+          <a routerLink="/tiendas/campana-carrito" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Recuperación de carrito</a>
+          <a routerLink="/tiendas/clientes/segmentacion" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Segmentación de Clientes</a>
           <a routerLink="/tiendas/satisfaccion" routerLinkActive="active" (click)="menuOpen = false">Satisfacción</a>
-          <a routerLink="/tiendas/gastos" routerLinkActive="active" (click)="menuOpen = false">Gastos</a>
-          <a routerLink="/tiendas/identidad" routerLinkActive="active" (click)="menuOpen = false">Identidad de Marca</a>
-          <a routerLink="/informes" routerLinkActive="active" (click)="menuOpen = false">Informes IA</a>
+          <a routerLink="/tiendas/gastos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Gastos</a>
+          <a routerLink="/tiendas/identidad" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Identidad de Marca</a>
+          <a routerLink="/informes" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Informes IA</a>
         }
 
         <!-- Enlaces para Administradores -->
         @if (user.rol === 'administrador') {
-          <a routerLink="/dashboard" routerLinkActive="active" (click)="menuOpen = false">Dashboard</a>
-          <a routerLink="/auditoria" routerLinkActive="active" (click)="menuOpen = false">Auditoria</a>
-          <a routerLink="/accesos" routerLinkActive="active" (click)="menuOpen = false">Roles y Permisos</a>
-          <a routerLink="/admin/backups" routerLinkActive="active" (click)="menuOpen = false">Backups</a>
-          <a routerLink="/informes" routerLinkActive="active" (click)="menuOpen = false">Informes IA</a>
+          <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Dashboard</a>
+          <a routerLink="/auditoria" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Auditoria</a>
+          <a routerLink="/accesos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Roles y Permisos</a>
+          <a routerLink="/admin/backups" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Backups</a>
+          <a routerLink="/informes" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Informes IA</a>
           <a (click)="abrirEnlaceExterno('http://127.0.0.1:8000/admin/')" class="nav-external-link" style="cursor: pointer;">
             <span>Django Admin</span>
             <svg class="external-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -129,14 +158,20 @@
           <span class="badge" [ngClass]="'badge--' + (user.rol === 'administrador' ? 'admin' : user.rol)">
             {{ user.rol }}
           </span>
-          <button class="btn btn--outline btn-logout-sm" (click)="logout()">Cerrar Sesion</button>
+          <button class="btn btn--outline btn-logout-sm" (click)="logout()">Cerrar sesión</button>
         </div>
       } @else {
-        <a routerLink="/login" routerLinkActive="active" (click)="menuOpen = false">Iniciar Sesion</a>
-        <a routerLink="/registro" routerLinkActive="active" class="btn btn--primary" (click)="menuOpen = false">Registrarse</a>
+        <a routerLink="/login" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menuOpen = false">Iniciar sesión</a>
+        <a routerLink="/registro" routerLinkActive="active" ariaCurrentWhenActive="page" class="btn btn--primary" (click)="menuOpen = false">Registrarse</a>
       }
     </nav>
   </div>
+  @if (monedaService.moneda() === 'BRL') {
+    <div class="currency-notice" role="status">
+      <strong>BRL · Solo consulta</strong>
+      <span>{{ monedaService.brlDisponible() ? 'Equivalencia indicativa del catálogo. El carrito continúa en Bs y el pago con tarjeta en USD.' : 'Cotización no disponible. Los precios se muestran en Bs.' }}</span>
+    </div>
+  }
 </header>
 
 @if (menuOpen) {
@@ -296,6 +331,9 @@
                 </div>
               }
 
+              @if (importeStripe; as cobro) {
+                <p class="stripe-importe">Importe autorizado: US$ {{ cobro.usd }} · Bs {{ cobro.bs }} · TC {{ cobro.tasa }}</p>
+              }
               <div id="stripe-payment-element" [hidden]="cargandoStripe"></div>
 
               @if (stripeError) {

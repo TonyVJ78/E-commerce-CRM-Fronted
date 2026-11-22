@@ -42,21 +42,22 @@
       <h1>{{ p.nombre }}</h1>
 
       <div class="precio">
-        <app-precio class="precio-actual" [bs]="precioActual" [usd]="precioUsdActual" />
-        <app-precio class="precio-anterior" *ngIf="precioAnterior" [bs]="precioAnterior" [usd]="variante?.precio_usd" />
+        <app-precio class="precio-actual" [bs]="precioActual" [usd]="precioUsdActual" [contextoCatalogo]="true" [brl]="variante ? (variante.visualizacion_brl ?? null) : (producto.visualizacion_brl ?? null)" />
+        <app-precio class="precio-anterior" *ngIf="precioAnterior" [bs]="precioAnterior" [usd]="variante?.precio_usd" [contextoCatalogo]="true" [brl]="variante?.visualizacion_brl ?? null" brlCampo="precio_normal" />
       </div>
       <app-tc-nota class="precio-tc" />
 
-      <p class="descripcion" *ngIf="p.descripcion">{{ p.descripcion }}</p>
+
 
       <div class="variantes" *ngIf="p.variantes.length > 1">
-        <span class="label">Opciones</span>
+        <span class="label">Elige una opción</span>
         <div class="opciones">
           <button
             type="button"
             *ngFor="let v of p.variantes"
             class="opcion"
             [class.seleccionada]="variante?.id === v.id"
+            [attr.aria-pressed]="variante?.id === v.id"
             [class.agotada]="v.stock <= 0"
             (click)="seleccionarVariante(v)"
           >
@@ -64,6 +65,8 @@
           </button>
         </div>
       </div>
+
+      <p class="descripcion" *ngIf="p.descripcion">{{ p.descripcion }}</p>
 
       <dl class="atributos" *ngIf="atributos.length">
         <ng-container *ngFor="let a of atributos">

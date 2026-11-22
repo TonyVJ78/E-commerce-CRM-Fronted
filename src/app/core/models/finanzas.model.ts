@@ -1,4 +1,25 @@
 export type Moneda = 'BOB' | 'USD';
+/** La fijación sigue siendo BOB/USD; BRL solo pertenece a la consulta del catálogo. */
+export type MonedaVisualizacion = Moneda | 'BRL';
+
+export interface EstadoBrl {
+  estado: string;
+  disponible: boolean;
+  fecha: string | null;
+  tasa_bob_por_brl: string | null;
+  fuente: string | null;
+  demo: boolean;
+}
+
+export interface VisualizacionBrl {
+  moneda: 'BRL';
+  precio_normal: string;
+  precio_efectivo: string;
+  cotizacion_fecha: string;
+  tasa_bob_por_brl: string;
+  fuente: string;
+  demo: boolean;
+}
 
 export interface TipoCambio {
   fecha: string;
@@ -10,7 +31,9 @@ export interface TipoCambio {
 export interface TipoCambioResponse {
   vigente: TipoCambio | null;
   historial: TipoCambio[];
+  brl?: EstadoBrl;
 }
+
 
 export type CategoriaGasto =
   | 'alquiler'

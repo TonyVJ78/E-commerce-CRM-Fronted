@@ -1,4 +1,7 @@
+import { VisualizacionBrl } from './finanzas.model';
+
 export interface VarianteCatalogo {
+  visualizacion_brl?: VisualizacionBrl | null;
   id: number;
   nombre: string;
   sku: string;
@@ -15,6 +18,7 @@ export interface VarianteCatalogo {
 }
 
 export interface ProductoCatalogo {
+  visualizacion_brl?: VisualizacionBrl | null;
   id: number;
   nombre: string;
   slug: string;

@@ -1,5 +1,6 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { formatearMonto, MonedaService } from '../../core/services/moneda.service';
+import { formatearMonto, formatearDecimalExacto, MonedaService } from '../../core/services/moneda.service';
+import { VisualizacionBrl } from '../../core/models/finanzas.model';
 
 interface VistaPrecio {
   principal: string;
@@ -17,6 +18,11 @@ interface VistaPrecio {
   standalone: true,
   template: `
     <span class="precio-principal">{{ vista().principal }}</span>
+    @if (brlCampo() === 'precio_efectivo') {
+      @if (referenciaBrl(); as referencia) {
+        <small class="precio-detalle">{{ referencia }}</small>
+      }
+    }
     @if (vista().secundario || vista().fijoEnUsd) {
       <small class="precio-detalle">
         @if (vista().secundario) {
@@ -29,15 +35,17 @@ interface VistaPrecio {
     }
   `,
   styles: `
-    :host { display: inline-block; }
-    .precio-principal { font-variant-numeric: tabular-nums; }
+    :host { display: inline-block; min-width: 0; max-width: 100%; }
+    .precio-principal { font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.2; }
     .precio-detalle {
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
       column-gap: 0.5em;
       justify-content: var(--precio-detalle-justify, flex-start);
-      font-size: var(--precio-detalle-size, 0.72em);
+      font-size: var(--precio-detalle-size, 0.8125rem);
+      overflow-wrap: anywhere;
+      margin-top: 0.25rem;
       font-weight: 500;
       font-style: normal;
       line-height: 1.4;
@@ -67,13 +75,29 @@ export class PrecioComponent {
   readonly tipoCambio = input<string | null | undefined>(null);
   /** Falso en listas densas donde la otra moneda estorba. Un producto en dólares siempre la muestra. */
   readonly secundaria = input(true);
+  readonly historico = input(false);
+  readonly contextoCatalogo = input(false);
+  readonly brl = input<VisualizacionBrl | null>(null);
+  readonly brlCampo = input<'precio_normal' | 'precio_efectivo'>('precio_efectivo');
 
   private readonly moneda = inject(MonedaService);
 
+  readonly referenciaBrl = computed(() => {
+    const info = this.brl();
+    if (!this.contextoCatalogo() || this.historico() || this.moneda.moneda() !== 'BRL' || !info
+        || !this.moneda.brlCoincide(info) || !formatearDecimalExacto(info[this.brlCampo()], 'BRL')) return null;
+    return `${info.demo ? 'DEMO — tasa sintética' : 'Equivalencia indicativa'} · ${info.cotizacion_fecha.split('-').reverse().join('/')} · ${info.fuente}`;
+  });
+
   readonly vista = computed<VistaPrecio>(() => {
+    const info = this.brl();
+    if (this.referenciaBrl() && info) {
+      return { principal: `≈ ${formatearDecimalExacto(info[this.brlCampo()], 'BRL')}`,
+        secundario: formatearMonto(Number(this.bs() ?? 0), 'BOB'), fijoEnUsd: false };
+    }
     const bs = Number(this.bs() ?? 0);
     const tasaPedido = this.tipoCambio();
-    const tasa = tasaPedido ? Number(tasaPedido) : this.moneda.usdBob();
+    const tasa = tasaPedido ? Number(tasaPedido) : (this.historico() ? null : this.moneda.usdBob());
     if (tasa === null) {
       return { principal: formatearMonto(bs, 'BOB'), secundario: null, fijoEnUsd: false };
     }

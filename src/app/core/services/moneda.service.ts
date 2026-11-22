@@ -1,11 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { Moneda, TipoCambio, TipoCambioResponse } from '../models/finanzas.model';
+import { EstadoBrl, Moneda, MonedaVisualizacion, TipoCambio, TipoCambioResponse, VisualizacionBrl } from '../models/finanzas.model';
 
 const CLAVE_MONEDA = 'km_moneda';
 
-const PREFIJO: Record<Moneda, string> = { BOB: 'Bs', USD: 'US$' };
+const PREFIJO: Record<MonedaVisualizacion, string> = { BOB: 'Bs', USD: 'US$', BRL: 'R$' };
+
+/** Formatea una cadena ya redondeada por Django. No convierte ni redondea dinero. */
+export function formatearDecimalExacto(valor: string, moneda: MonedaVisualizacion): string | null {
+  if (!/^\d{1,10}\.\d{2}$/.test(valor)) return null;
+  const [entero, centavos] = valor.split('.');
+  return `${PREFIJO[moneda]} ${entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${centavos}`;
+}
 
 const formatoMonto = new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const formatoTasa = new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -24,8 +31,12 @@ export function formatearTasa(tasa: number): string {
 export class MonedaService {
   private readonly http = inject(HttpClient);
 
-  readonly moneda = signal<Moneda>(this.leerMonedaGuardada());
+  readonly moneda = signal<MonedaVisualizacion>(this.leerMonedaGuardada());
   readonly cotizacion = signal<TipoCambio | null>(null);
+  readonly brl = signal<EstadoBrl | null>(null);
+  readonly brlPreparado = computed(() => this.brl() !== null);
+  readonly brlDisponible = computed(() => this.brl()?.disponible === true);
+  readonly mostrarBrl = computed(() => this.moneda() === 'BRL' && this.brlDisponible());
   readonly usdDisponible = computed(() => this.cotizacion() !== null);
   /** Sin cotización no se inventa una tasa: se muestra solo en Bs aunque se haya elegido USD. */
   readonly mostrarUsd = computed(() => this.moneda() === 'USD' && this.usdDisponible());
@@ -36,12 +47,13 @@ export class MonedaService {
 
   constructor() {
     this.http.get<TipoCambioResponse>(`${environment.apiUrl}/finanzas/tipo-cambio/`).subscribe({
-      next: (respuesta) => this.cotizacion.set(respuesta.vigente),
-      error: () => this.cotizacion.set(null),
+      next: (respuesta) => { this.cotizacion.set(respuesta.vigente); this.brl.set(respuesta.brl ?? null); },
+      error: () => { this.cotizacion.set(null); this.brl.set(null); },
     });
   }
 
-  elegir(moneda: Moneda): void {
+  elegir(moneda: MonedaVisualizacion): void {
+    if (!['BOB', 'USD', 'BRL'].includes(moneda)) moneda = 'BOB';
     this.moneda.set(moneda);
     try {
       localStorage.setItem(CLAVE_MONEDA, moneda);
@@ -67,9 +79,17 @@ export class MonedaService {
     return valor.moneda_precio === 'USD' ? this.usdABs(valor.precio_usd) : valor.precio;
   }
 
-  private leerMonedaGuardada(): Moneda {
+  brlCoincide(vista: VisualizacionBrl): boolean {
+    const estado = this.brl();
+    return !!estado?.disponible && vista.moneda === 'BRL' && estado.fecha === vista.cotizacion_fecha
+      && estado.tasa_bob_por_brl === vista.tasa_bob_por_brl && estado.demo === vista.demo
+      && estado.fuente === vista.fuente;
+  }
+
+  private leerMonedaGuardada(): MonedaVisualizacion {
     try {
-      return localStorage.getItem(CLAVE_MONEDA) === 'USD' ? 'USD' : 'BOB';
+      const guardada = localStorage.getItem(CLAVE_MONEDA);
+      return guardada === 'USD' || guardada === 'BRL' ? guardada : 'BOB';
     } catch {
       return 'BOB';
     }

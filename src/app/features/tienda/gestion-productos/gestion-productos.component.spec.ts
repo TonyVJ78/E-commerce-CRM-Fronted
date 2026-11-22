@@ -1,3 +1,6 @@
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { GestionProductosComponent } from './gestion-productos.component';
@@ -15,13 +18,17 @@ describe('GestionProductosComponent stock management', () => {
     producto.listarMovimientosStock.and.returnValue(of([]));
     producto.ajustarStock.and.returnValue(of({ id: 1, variante: 4, previous_stock: 2, delta: 1, resulting_stock: 3, actor: 7, reason: 'Conteo', created_at: '' }));
     await TestBed.configureTestingModule({ imports: [GestionProductosComponent], providers: [
+      provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
       { provide: ProductoService, useValue: producto },
       { provide: TiendaService, useValue: { listar: () => of([]) } },
       { provide: CarritoService, useValue: { checkoutCompleted$: of() } }
     ] }).compileComponents();
     fixture = TestBed.createComponent(GestionProductosComponent);
     component = fixture.componentInstance;
+    TestBed.inject(HttpTestingController).expectOne(r=>r.url.endsWith('/finanzas/tipo-cambio/')).flush({
+      vigente:{fecha:'2026-11-21',usd_bob:'8.0000',fuente:'DEMO'},historial:[]});
   });
+  afterEach(()=>TestBed.inject(HttpTestingController).verify());
   it('rejects invalid, zero, and negative-result adjustments', () => {
     component.abrirInventario({ id: 1, tienda: 2, nombre: 'P', slug: 'p', variantes: [{ id: 4, sku: 'A', nombre: 'A', precio: 1, precio_usd: null, precio_oferta: null, costo_unitario: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true }] });
     component.seleccionarVariante(4);
@@ -65,7 +72,7 @@ describe('GestionProductosComponent stock management', () => {
     expect(component.movimientosStock).toEqual([]);
   });
 
-  it('updates the submitted product and reloads history on success without changing another active context', () => {
+  it('updates the submitted product and preserves the modal while an adjustment settles', () => {
     const save = new Subject<any>();
     const history = new Subject<any[]>();
     producto.ajustarStock.and.returnValue(save);
@@ -78,8 +85,9 @@ describe('GestionProductosComponent stock management', () => {
     save.next({}); save.complete();
     expect(component.productos[0].variantes?.[0].stock).toBe(3);
     expect(component.productos[0].stock).toBe(3);
-    expect(component.productoInventario).toBeNull();
-    expect(producto.listarMovimientosStock).toHaveBeenCalledTimes(1);
+    // La protección existente impide cerrar el modal durante el guardado.
+    expect(component.productoInventario?.id).toBe(1);
+    expect(producto.listarMovimientosStock).toHaveBeenCalledTimes(2);
   });
 
   it('refreshes the selected variant history after a successful adjustment', () => {
@@ -128,4 +136,20 @@ describe('GestionProductosComponent stock management', () => {
       tipo_ajuste: 'INGRESO'
     });
   });
+  it('CU-39 selecciona y envía la variante explícita sin cambiar stock', () => {
+    const actualizar = jasmine.createSpy('actualizar').and.returnValue(of({ id: 1, tienda: 2, nombre: 'P', slug: 'p', precio: '80.00', variantes: [] }));
+    (producto as any).actualizar = actualizar;
+    component.iniciarEdicion({ id: 1, tienda: 2, nombre: 'P', slug: 'p', precio: 100, variantes: [
+      { id: 4, sku: 'A', nombre: 'A', precio: 100, precio_usd: null, costo_unitario: null, precio_oferta: null, stock: 2, stock_minimo: 0, atributos: {}, activa: true },
+      { id: 5, sku: 'B', nombre: 'B', precio: 200, precio_usd: 25, costo_unitario: null, precio_oferta: null, stock: 8, stock_minimo: 0, atributos: {}, activa: true },
+    ] });
+    component.seleccionarVarianteEdicion('5');
+    component.guardarEdicion();
+    const payload = actualizar.calls.mostRecent().args[2];
+    expect(payload.variante_id).toBe(5);
+    expect(payload.precio_usd).toBe(25);
+    expect(payload.stock).toBeUndefined();
+    expect(payload.moneda_precio).toBeUndefined();
+  });
+
 });

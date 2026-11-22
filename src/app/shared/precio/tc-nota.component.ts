@@ -29,6 +29,6 @@ export class TcNotaComponent {
     const cotizacion = this.moneda.cotizacion();
     if (!cotizacion) return null;
     const fecha = cotizacion.fecha.split('-').reverse().join('/');
-    return `TC oficial BCB ${formatearTasa(Number(cotizacion.usd_bob))} · ${fecha}`;
+    return `TC USD ${formatearTasa(Number(cotizacion.usd_bob))} Bs/USD · ${fecha} · ${cotizacion.fuente}`;
   });
 }

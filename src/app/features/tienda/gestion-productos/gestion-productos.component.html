@@ -6,8 +6,8 @@
         <span class="pulse-dot"></span>
         <span>Modulo de Empresa</span>
       </div>
-      <h2>Gestion de Catalogo e Inventario</h2>
-      <p class="catalog-subtitle">Administra los productos, precios, variantes, stock auditado e imagenes de tu catalogo comercial (CU-15 / CU-17).</p>
+      <h2>Gestión de catálogo e inventario</h2>
+      <p class="catalog-subtitle">Administra tus productos y variantes. Fija precios en Bs o USD y revisa sus equivalencias en el catálogo.</p>
     </div>
 
     <div class="header-actions">
@@ -65,7 +65,7 @@
     </div>
   }
 
-  @if (mensajeError) {
+  @if (mensajeError && !productoEnEdicion) {
     <div class="custom-alert alert-danger" role="alert">
       <p>{{ mensajeError }}</p>
       <button type="button" class="alert-close" (click)="mensajeError = ''" aria-label="Cerrar">
@@ -80,12 +80,12 @@
   <!-- MODAL DE EDICION DE PRODUCTO (CU-09) -->
   @if (productoEnEdicion) {
     <div class="modal-backdrop-custom" (click)="cancelarEdicion()">
-      <div class="modal-dialog-custom" (click)="$event.stopPropagation()">
+      <div class="modal-dialog-custom price-edit-dialog" appDialogFocus (dialogEscape)="!cargando && !procesandoImagen && cancelarEdicion()" role="dialog" aria-modal="true" aria-labelledby="price-edit-title" (click)="$event.stopPropagation()">
         <div class="modal-header-custom">
           <div class="modal-title-group">
             <div class="modal-chip">Edicion de Producto</div>
-            <h3>Modificar Producto</h3>
-            <p class="modal-sub">Actualiza los detalles, precio e imagen para el catalogo publico.</p>
+            <h3 id="price-edit-title">Editar producto y precios</h3>
+            <p class="modal-sub">Selecciona la variante antes de cambiar su precio.</p>
           </div>
           <button type="button" class="btn-close-modal" (click)="cancelarEdicion()" aria-label="Cerrar modal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -97,6 +97,72 @@
 
         <form [formGroup]="editForm" (ngSubmit)="guardarEdicion()" class="modal-form">
           <div class="modal-body-content">
+            @if (mensajeError) {
+              <div class="custom-alert alert-danger" role="alert"><p>{{ mensajeError }}</p></div>
+            }
+            <!-- Campos del Formulario de Producto -->
+            <div class="form-fields-grid price-edit-fields">
+              <div class="price-edit-guidance full-width">
+                <strong>Precio de venta: Bs o USD</strong>
+                <span>La moneda de consulta del catálogo es independiente: no cambia el precio registrado ni la moneda de cobro.</span>
+              </div>
+              <div class="field-item full-width">
+                <label class="field-label" for="price-edit-nombre">Nombre del Producto <span class="required">*</span></label>
+                <input type="text" id="price-edit-nombre" class="field-input" formControlName="nombre" placeholder="Ej. Poncho de Lana de Alpaca Premium">
+              </div>
+
+              <div class="field-item full-width" *ngIf="(productoEnEdicion?.variantes?.length || 0) > 1">
+                <label class="field-label" for="price-edit-variant">Variante que se editará</label>
+                <select id="price-edit-variant" class="field-input" aria-describedby="price-edit-scope" [value]="editForm.value.variante_id" (change)="seleccionarVarianteEdicion($any($event.target).value)">
+                  @for (variante of productoEnEdicion.variantes || []; track variante.id) {
+                    <option [value]="variante.id">{{ variante.nombre }} — {{ variante.sku }}</option>
+                  }
+                </select>
+                <small id="price-edit-scope" class="field-help">Los importes se guardan únicamente en esta variante. El nombre, la descripción y la imagen pertenecen al producto.</small>
+              </div>
+              <div class="field-item">
+                <label class="field-label">Precio unitario <span class="required">*</span></label>
+                <app-moneda-precio [grupo]="editForm" [precioMin]="0.01">
+                  @if (editForm.value.moneda_precio === 'USD') {
+                    <input type="number" step="0.01" min="0.01" class="field-input" aria-label="Precio unitario en dólares" formControlName="precio_usd">
+                  } @else {
+                    <input type="number" step="0.01" min="0.01" class="field-input" aria-label="Precio unitario en bolivianos" formControlName="precio">
+                  }
+                </app-moneda-precio>
+              </div>
+              <div class="field-item">
+                <label class="field-label" for="price-edit-precio_oferta">Precio oferta (Bs, opcional)</label>
+                <input type="number" step="0.01" min="0" id="price-edit-precio_oferta" class="field-input" formControlName="precio_oferta">
+              </div>
+
+              <div class="field-item">
+                <label class="field-label">Costo Unitario (Bs.) <span class="optional-tag">opcional</span></label>
+                <div class="price-input-wrapper">
+                  <span class="price-prefix">Bs.</span>
+                  <input type="number" step="0.01" min="0" class="field-input price-input" formControlName="costo_unitario" placeholder="0.00">
+                </div>
+                @if (margenEdicion; as margen) {
+                  <small class="margen-hint" [class.margen-negativo]="margen.ganancia < 0">
+                    Margen: Bs. {{ margen.ganancia | number:'1.2-2' }} ({{ margen.porcentaje | number:'1.0-1' }}%)
+                  </small>
+                }
+              </div>
+
+              <div class="field-item full-width">
+                <label class="field-label" for="price-edit-categoria">Categoria</label>
+                <input type="text" id="price-edit-categoria" class="field-input" formControlName="categoria" placeholder="Escribe o selecciona una categoria..." list="listaCategorias">
+                <datalist id="listaCategorias">
+                  @for (cat of categoriasDisponibles; track cat) {
+                    <option [value]="cat"></option>
+                  }
+                </datalist>
+              </div>
+
+              <div class="field-item full-width">
+                <label class="field-label" for="price-edit-descripcion">Descripcion del Producto</label>
+                <textarea id="price-edit-descripcion" class="field-input field-textarea" rows="3" formControlName="descripcion" placeholder="Describe los atributos, materiales, procedencia o cuidados..."></textarea>
+              </div>
+            </div>
             <!-- Carga de Imagen desde PC -->
             <div class="form-section-image">
               <div class="section-label">
@@ -168,56 +234,6 @@
               <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/png, image/jpeg, image/webp" style="display: none;" />
             </div>
 
-            <!-- Campos del Formulario de Producto -->
-            <div class="form-fields-grid">
-              <div class="field-item full-width">
-                <label class="field-label">Nombre del Producto <span class="required">*</span></label>
-                <input type="text" class="field-input" formControlName="nombre" placeholder="Ej. Poncho de Lana de Alpaca Premium">
-              </div>
-
-              <div class="field-item">
-                <label class="field-label">Precio unitario <span class="required">*</span></label>
-                <app-moneda-precio [grupo]="editForm" [precioMin]="0.01">
-                  <div class="price-input-wrapper">
-                    @if (editForm.value.moneda_precio === 'USD') {
-                      <span class="price-prefix">US$</span>
-                      <input type="number" step="0.01" min="0.01" class="field-input price-input" formControlName="precio_usd" placeholder="0.00">
-                    } @else {
-                      <span class="price-prefix">Bs.</span>
-                      <input type="number" step="0.01" min="0.01" class="field-input price-input" formControlName="precio" placeholder="0.00">
-                    }
-                  </div>
-                </app-moneda-precio>
-              </div>
-
-              <div class="field-item">
-                <label class="field-label">Costo Unitario (Bs.) <span class="optional-tag">opcional</span></label>
-                <div class="price-input-wrapper">
-                  <span class="price-prefix">Bs.</span>
-                  <input type="number" step="0.01" min="0" class="field-input price-input" formControlName="costo_unitario" placeholder="0.00">
-                </div>
-                @if (margenEdicion; as margen) {
-                  <small class="margen-hint" [class.margen-negativo]="margen.ganancia < 0">
-                    Margen: Bs. {{ margen.ganancia | number:'1.2-2' }} ({{ margen.porcentaje | number:'1.0-1' }}%)
-                  </small>
-                }
-              </div>
-
-              <div class="field-item full-width">
-                <label class="field-label">Categoria</label>
-                <input type="text" class="field-input" formControlName="categoria" placeholder="Escribe o selecciona una categoria..." list="listaCategorias">
-                <datalist id="listaCategorias">
-                  @for (cat of categoriasDisponibles; track cat) {
-                    <option [value]="cat"></option>
-                  }
-                </datalist>
-              </div>
-
-              <div class="field-item full-width">
-                <label class="field-label">Descripcion del Producto</label>
-                <textarea class="field-input field-textarea" rows="3" formControlName="descripcion" placeholder="Describe los atributos, materiales, procedencia o cuidados..."></textarea>
-              </div>
-            </div>
           </div>
 
           <!-- Botones de Accion del Modal -->

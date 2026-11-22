@@ -7,15 +7,16 @@ import { ProductoService } from '../../../core/services/producto.service';
 import { TiendaService } from '../../../core/services/tienda.service';
 import { CarritoService } from '../../../core/services/carrito.service';
 import { MargenProducto, Producto, Tienda, VarianteProducto, calcularMargen } from '../../../core/models';
+import { MonedaPrecioComponent } from '../../../shared/precio/moneda-precio.component';
+import { DialogFocusDirective } from '../../../shared/dialog-focus.directive';
+import { PrecioComponent } from '../../../shared/precio/precio.component';
 import { MovimientoStock } from '../../../core/services/producto.service';
 import { MonedaService } from '../../../core/services/moneda.service';
-import { MonedaPrecioComponent } from '../../../shared/precio/moneda-precio.component';
-import { PrecioComponent } from '../../../shared/precio/precio.component';
 
 @Component({
   selector: 'app-gestion-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, MonedaPrecioComponent, PrecioComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, MonedaPrecioComponent, PrecioComponent, DialogFocusDirective],
   templateUrl: './gestion-productos.component.html',
   styleUrls: ['./gestion-productos.component.css']
 })
@@ -67,6 +68,8 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   editForm: FormGroup = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(200)]],
     moneda_precio: ['BOB'],
+    variante_id: [null],
+    precio_oferta: [null],
     precio: [0, [Validators.required, Validators.min(0.01)]],
     precio_usd: [null as number | null],
     costo_unitario: [null as number | null, Validators.min(0)],
@@ -174,13 +177,18 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
     this.limpiarMensajes();
     const currentImg = producto.imagen_url || (producto.imagenes && producto.imagenes.length > 0 ? producto.imagenes[0].url : '');
     this.imagenPreview = currentImg || null;
+    const primera = producto.variantes?.[0];
+    const precioUsd = primera ? primera.precio_usd : producto.precio_usd;
+    const costo = primera ? primera.costo_unitario : producto.costo_unitario;
 
     this.editForm.patchValue({
       nombre: producto.nombre,
-      moneda_precio: producto.precio_usd ? 'USD' : 'BOB',
-      precio: producto.precio,
-      precio_usd: producto.precio_usd ? Number(producto.precio_usd) : null,
-      costo_unitario: producto.costo_unitario === null || producto.costo_unitario === undefined ? null : Number(producto.costo_unitario),
+      variante_id: producto.variantes?.[0]?.id ?? null,
+      moneda_precio: precioUsd != null ? 'USD' : 'BOB',
+      precio_oferta: producto.variantes?.[0]?.precio_oferta ?? null,
+      precio: primera ? primera.precio : producto.precio,
+      precio_usd: precioUsd == null ? null : Number(precioUsd),
+      costo_unitario: costo == null ? null : Number(costo),
       categoria: producto.categoria || '',
       imagen_url: currentImg || '',
       descripcion: producto.descripcion || ''
@@ -194,6 +202,17 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
   get margenVarianteInventario(): MargenProducto | null {
     const variante = this.varianteInventario;
     return variante ? calcularMargen(variante.precio, variante.costo_unitario) : null;
+  }
+
+  seleccionarVarianteEdicion(valor: string): void {
+    const variante = this.productoEnEdicion?.variantes?.find(v => v.id === Number(valor));
+    if (!variante) return;
+    this.editForm.patchValue({
+      variante_id: variante.id, moneda_precio: variante.precio_usd ? 'USD' : 'BOB',
+      precio: variante.precio, precio_usd: variante.precio_usd ?? null,
+      precio_oferta: variante.precio_oferta,
+      costo_unitario: variante.costo_unitario ?? null,
+    });
   }
 
   cancelarEdicion(): void {
@@ -315,8 +334,9 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
             ...this.productos[idx],
             ...prodActualizado,
             nombre: datosModificados.nombre,
-            precio: Number(prodActualizado.precio),
-            costo_unitario: datosModificados.costo_unitario,
+            precio: prodActualizado.precio,
+            stock: prodActualizado.stock_total ?? this.productos[idx].stock,
+            costo_unitario: prodActualizado.variantes?.[0] ? prodActualizado.variantes[0].costo_unitario : this.productos[idx].costo_unitario,
             descripcion: datosModificados.descripcion,
             categoria: datosModificados.categoria,
             imagen_url: nuevaImg,
@@ -327,7 +347,11 @@ export class GestionProductosComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.cargando = false;
-        this.mensajeError = err.error?.detail || err.error?.precio_usd || 'Error al guardar los cambios del producto.';
+        const detalle = err.error?.detail ?? err.error?.precio_usd ?? err.error?.precio
+          ?? err.error?.precio_oferta ?? err.error?.variante_id ?? err.error?.categoria_id
+          ?? err.error?.categoria ?? err.error?.nombre;
+        this.mensajeError = Array.isArray(detalle) ? detalle.join(' ')
+          : typeof detalle === 'string' ? detalle : 'Error al guardar los cambios del producto.';
       }
     });
   }
