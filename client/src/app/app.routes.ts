@@ -60,6 +60,14 @@ export const routes: Routes = [
       import('./features/tienda/create-tienda/gestion-productos/gestion-productos.componet').then(m => m.GestionProductosComponent)
   },
   {
+    path: 'informes',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/informes/informes.component').then(
+        (m) => m.InformesComponent
+      )
+  },
+  {
     path: '**',
     redirectTo: 'login'
   }

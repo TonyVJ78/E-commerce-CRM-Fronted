@@ -1,0 +1,323 @@
+<div class="informes-container">
+  <header class="informes-header">
+    <h1>Informes de Machine Learning</h1>
+    <p>CU-35 — Pronóstico de ventas, riesgo de abandono y predicción de compras.</p>
+  </header>
+
+  <!-- Selector de tienda -->
+  <div class="selector-tienda" *ngIf="esEmpresa">
+    <label for="tienda-select">Tienda:</label>
+    <select
+      id="tienda-select"
+      [ngModel]="tiendaSeleccionadaId()"
+      (ngModelChange)="actualizarTienda($event)"
+      [disabled]="cargandoTiendas()"
+    >
+      <option *ngFor="let t of tiendas()" [value]="t.id">
+        {{ t.nombre }}
+      </option>
+    </select>
+    <span *ngIf="cargandoTiendas()" class="cargando">Cargando tiendas...</span>
+    <span *ngIf="errorTiendas()" class="error">{{ errorTiendas() }}</span>
+  </div>
+
+  <div *ngIf="!esEmpresa && !tiendas().length" class="aviso">
+    No se encontraron tiendas asociadas a su usuario.
+  </div>
+
+  <!-- Pestañas -->
+  <nav class="pestanas">
+    <button
+      *ngFor="let p of pestanas"
+      [class.activa]="pestanaActiva() === p.valor"
+      (click)="seleccionarPestana(p.valor)"
+    >
+      {{ p.etiqueta }}
+    </button>
+  </nav>
+
+  <!-- ==================== PESTAÑA: VENTAS ==================== -->
+  <section *ngIf="esVentas" class="panel ventas-panel">
+    <div class="panel-controles">
+      <label>Horizonte (días):</label>
+      <select [ngModel]="horizonteVentas()" (ngModelChange)="actualizarHorizonteVentas($event)">
+        <option [value]="7">7 días</option>
+        <option [value]="30">30 días</option>
+      </select>
+      <button
+        (click)="ejecutarPronosticoVentas()"
+        [disabled]="cargandoVentas() || !tiendaSeleccionadaId()"
+      >
+        Ejecutar pronóstico
+      </button>
+    </div>
+
+    <div *ngIf="cargandoVentas()" class="estado cargando">
+      Cargando pronóstico de ventas...
+    </div>
+
+    <div *ngIf="sinPermisoVentas()" class="estado error">
+      No tiene permiso para consultar pronósticos de esta tienda.
+    </div>
+
+    <div *ngIf="errorVentas()" class="estado error">
+      {{ errorVentas() }}
+    </div>
+
+    <div *ngIf="datosInsuficientesVentas()" class="estado aviso">
+      No hay suficientes datos de ventas para esta tienda.
+    </div>
+
+    <div *ngIf="datosVentas()" class="resultado">
+      <div class="resultado-resumen">
+        <span class="etiqueta">Tienda:</span>
+        <span class="valor">{{ datosVentas()!.tienda_nombre }}</span>
+        <span class="etiqueta">Fecha de corte:</span>
+        <span class="valor">{{ datosVentas()!.fecha_corte }}</span>
+        <span class="etiqueta">Horizonte:</span>
+        <span class="valor">{{ datosVentas()!.horizonte_dias }} días</span>
+      </div>
+
+      <h3>Predicción próximos {{ datosVentas()!.horizonte_dias }} días</h3>
+      <table class="tabla-prediccion">
+        <thead>
+          <tr><th>Fecha</th><th>Valor previsto (Bs)</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fp of datosVentas()!.fechas_previstas">
+            <td>{{ fp.fecha }}</td>
+            <td>{{ fp.valor_previsto | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="datosVentas()!.metrica" class="metrica">
+        <h4>Métricas de evaluación (holdout temporal)</h4>
+        <table class="tabla-metrica">
+          <tr><td>MAE (modelo)</td><td>{{ datosVentas()!.metrica!.mae | number:'1.2-2' }}</td></tr>
+          <tr><td>RMSE (modelo)</td><td>{{ datosVentas()!.metrica!.rmse | number:'1.2-2' }}</td></tr>
+          <tr *ngIf="datosVentas()!.metrica!.baseline_mae !== undefined">
+            <td>MAE (baseline ingenuo)</td><td>{{ datosVentas()!.metrica!.baseline_mae | number:'1.2-2' }}</td></tr>
+          <tr><td>Datos entrenamiento</td><td>{{ datosVentas()!.metrica!.datos_entrenamiento }}</td></tr>
+          <tr><td>Datos prueba</td><td>{{ datosVentas()!.metrica!.datos_prueba }}</td></tr>
+          <tr><td>Método</td><td>{{ datosVentas()!.metrica!.metodo }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PESTAÑA: ABANDONO ==================== -->
+  <section *ngIf="esAbandono" class="panel abandono-panel">
+    <div class="panel-controles">
+      <label>Umbral de abandono (días sin comprar):</label>
+      <select [ngModel]="umbralAbandono()" (ngModelChange)="actualizarUmbralAbandono($event)">
+        <option [value]="30">30 días</option>
+        <option [value]="60">60 días</option>
+        <option [value]="90" selected>90 días</option>
+        <option [value]="180">180 días</option>
+      </select>
+      <button
+        (click)="evaluarRiesgoAbandono()"
+        [disabled]="cargandoAbandono() || !tiendaSeleccionadaId()"
+      >
+        Evaluar riesgo
+      </button>
+    </div>
+
+    <div *ngIf="cargandoAbandono()" class="estado cargando">
+      Evaluando riesgo de abandono...
+    </div>
+
+    <div *ngIf="sinPermisoAbandono()" class="estado error">
+      No tiene permiso para consultar riesgos de abandono de esta tienda.
+    </div>
+
+    <div *ngIf="errorAbandono()" class="estado error">
+      {{ errorAbandono() }}
+    </div>
+
+    <div *ngIf="datosInsuficientesAbandono()" class="estado aviso">
+      No hay suficientes datos etiquetados para evaluar el riesgo de abandono.
+    </div>
+
+    <div *ngIf="datosAbandono()" class="resultado">
+      <div class="resultado-resumen">
+        <span class="etiqueta">Tienda:</span>
+        <span class="valor">{{ datosAbandono()!.tienda_nombre }}</span>
+        <span class="etiqueta">Fecha de corte:</span>
+        <span class="valor">{{ datosAbandono()!.fecha_referencia }}</span>
+        <span class="etiqueta">Umbral:</span>
+        <span class="valor">{{ datosAbandono()!.dias_umbral_abandono }} días</span>
+        <span class="etiqueta">Clientes evaluados:</span>
+        <span class="valor">{{ datosAbandono()!.clientes.length }}</span>
+      </div>
+
+      <h3>Clientes por nivel de riesgo</h3>
+      <table class="tabla-clientes">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Probabilidad</th>
+            <th>Riesgo</th>
+            <th>Recencia (días)</th>
+            <th>Frecuencia</th>
+            <th>Monto total (Bs)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of datosAbandono()!.clientes">
+            <td>{{ c.cliente_email }}</td>
+            <td>{{ c.probabilidad_abandono | number:'1.2-2' }}</td>
+            <td [class]="claseRiesgo(c.nivel_riesgo)">{{ c.nivel_riesgo }}</td>
+            <td>{{ c.recencia_dias }}</td>
+            <td>{{ c.frecuencia }}</td>
+            <td>{{ c.monetario_total | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="datosAbandono()!.metrica" class="metrica">
+        <h4>Métricas de clasificación (holdout temporal)</h4>
+        <table class="tabla-metrica">
+          <tr><td>Accuracy</td><td>{{ datosAbandono()!.metrica!.accuracy | number:'1.2-2' }}</td></tr>
+          <tr><td>Precision</td><td>{{ datosAbandono()!.metrica!.precision | number:'1.2-2' }}</td></tr>
+          <tr><td>Recall</td><td>{{ datosAbandono()!.metrica!.recall | number:'1.2-2' }}</td></tr>
+          <tr><td>F1-score</td><td>{{ datosAbandono()!.metrica!.f1 | number:'1.2-2' }}</td></tr>
+          <tr><td>Brier score</td><td>{{ datosAbandono()!.metrica!.brier_score | number:'1.2-4' }}</td></tr>
+          <tr><td>Entrenamiento</td><td>{{ datosAbandono()!.metrica!.clientes_entrenados }}</td></tr>
+          <tr><td>Prueba</td><td>{{ datosAbandono()!.metrica!.clientes_prueba }}</td></tr>
+          <tr><td>Método</td><td>{{ datosAbandono()!.metrica!.metodo }}</td></tr>
+        </table>
+
+        <div class="matriz-confusion" *ngIf="datosAbandono()!.metrica!.matriz_confusion">
+          <h5>Matriz de confusión</h5>
+          <table class="tabla-matriz">
+            <tr><th></th><th>Predicho: No abandona</th><th>Predicho: Abandona</th></tr>
+            <tr>
+              <th>Real: No abandona</th>
+              <td>{{ datosAbandono()!.metrica!.matriz_confusion.tn }}</td>
+              <td>{{ datosAbandono()!.metrica!.matriz_confusion.fp }}</td>
+            </tr>
+            <tr>
+              <th>Real: Abandona</th>
+              <td>{{ datosAbandono()!.metrica!.matriz_confusion.fn }}</td>
+              <td>{{ datosAbandono()!.metrica!.matriz_confusion.tp }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PESTAÑA: COMPRAS ==================== -->
+  <section *ngIf="esCompras" class="panel compras-panel">
+    <div class="panel-controles">
+      <label>Cliente:</label>
+      <select
+        [ngModel]="clienteIdCompra()"
+        (ngModelChange)="actualizarClienteCompra($event)"
+        [disabled]="cargandoCompras() || !tiendaSeleccionadaId()"
+      >
+        <option [value]="null">Seleccionar cliente...</option>
+      </select>
+      <label>Horizonte (días):</label>
+      <select [ngModel]="horizonteCompras()" (ngModelChange)="actualizarHorizonteCompras($event)">
+        <option [value]="7">7 días</option>
+        <option [value]="30">30 días</option>
+      </select>
+      <button
+        (click)="predecirCompra()"
+        [disabled]="cargandoCompras() || !tiendaSeleccionadaId()"
+      >
+        Predecir compra
+      </button>
+    </div>
+
+    <div *ngIf="cargandoCompras()" class="estado cargando">
+      Prediciendo próxima compra...
+    </div>
+
+    <div *ngIf="sinPermisoCompras()" class="estado error">
+      No tiene permiso para consultar esta predicción.
+    </div>
+
+    <div *ngIf="errorCompras()" class="estado error">
+      {{ errorCompras() }}
+    </div>
+
+    <div *ngIf="datosInsuficientesCompras()" class="estado aviso">
+      No hay suficientes datos para predecir la próxima compra.
+    </div>
+
+    <div *ngIf="datosCompras()" class="resultado">
+      <div class="resultado-resumen">
+        <span class="etiqueta">Tienda:</span>
+        <span class="valor">{{ datosCompras()!.tienda_nombre }}</span>
+        <span class="etiqueta">Cliente:</span>
+        <span class="valor">{{ datosCompras()!.cliente_id }}</span>
+        <span class="etiqueta">Horizonte:</span>
+        <span class="valor">{{ datosCompras()!.horizonte_dias }} días</span>
+        <span class="etiqueta">Fecha de corte:</span>
+        <span class="valor">{{ datosCompras()!.fecha_corte }}</span>
+      </div>
+
+      <div class="prediccion-destacada">
+        <span class="etiqueta">Probabilidad de compra:</span>
+        <span class="valor-grande">{{ (datosCompras()!.probabilidad_compra ?? 0) * 100 | number:'1.2-2' }}%</span>
+        <span class="etiqueta">Nivel:</span>
+        <span [class]="claseNivelCompra(datosCompras()!.nivel)">{{ datosCompras()!.nivel }}</span>
+      </div>
+
+      <div class="variables" *ngIf="datosCompras()!.variables_explicativas">
+        <h4>Variables explicativas</h4>
+        <table class="tabla-metrica">
+          <tr><td>Tiene historial</td><td>{{ datosCompras()!.variables_explicativas!.tiene_historial ? 'Sí' : 'No' }}</td></tr>
+          <tr><td>Frecuencia</td><td>{{ datosCompras()!.variables_explicativas!.frecuencia }}</td></tr>
+          <tr><td>Recencia (días)</td><td>{{ datosCompras()!.variables_explicativas!.recencia_dias }}</td></tr>
+          <tr><td>Monto total (Bs)</td><td>{{ datosCompras()!.variables_explicativas!.monetario_total | number:'1.2-2' }}</td></tr>
+          <tr><td>Promedio intervalo (días)</td><td>{{ datosCompras()!.variables_explicativas!.promedio_intervalo_dias | number:'1.2-2' }}</td></tr>
+          <tr><td>Días como cliente</td><td>{{ datosCompras()!.variables_explicativas!.dias_cliente }}</td></tr>
+        </table>
+      </div>
+
+      <div *ngIf="datosCompras()!.metrica" class="metrica">
+        <h4>Métricas de clasificación (holdout temporal)</h4>
+        <table class="tabla-metrica">
+          <tr><td>Accuracy</td><td>{{ datosCompras()!.metrica!.accuracy | number:'1.2-2' }}</td></tr>
+          <tr><td>Precision</td><td>{{ datosCompras()!.metrica!.precision | number:'1.2-2' }}</td></tr>
+          <tr><td>Recall</td><td>{{ datosCompras()!.metrica!.recall | number:'1.2-2' }}</td></tr>
+          <tr><td>F1-score</td><td>{{ datosCompras()!.metrica!.f1 | number:'1.2-2' }}</td></tr>
+          <tr><td>Brier score</td><td>{{ datosCompras()!.metrica!.brier_score | number:'1.2-4' }}</td></tr>
+          <tr><td>Método</td><td>{{ datosCompras()!.metrica!.metodo }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== ENTRENAMIENTOS ==================== -->
+  <section *ngIf="esEmpresa" class="panel entrenamientos-panel">
+    <h3>Entrenamientos de modelos</h3>
+    <button (click)="cargarEntrenamientos()" [disabled]="cargandoEntrenamientos()">
+      {{ cargandoEntrenamientos() ? 'Cargando...' : 'Refrescar entrenamientos' }}
+    </button>
+
+    <table *ngIf="entrenamientos().length > 0" class="tabla-entrenamientos">
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Fecha inicio</th>
+          <th>Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of entrenamientos()">
+          <td>{{ e.tipo_modelo }}</td>
+          <td>{{ e.estado }}</td>
+          <td>{{ e.fecha_inicio }}</td>
+          <td>{{ e.usuario_email }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>

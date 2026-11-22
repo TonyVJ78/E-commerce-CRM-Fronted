@@ -1,0 +1,348 @@
+/**
+ * Estilos del componente Informes de Machine Learning (CU-35).
+ * Sigue las convenciones CSS del proyecto (variables HSL, tipografía Inter).
+ */
+
+.informes-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.informes-header {
+  margin-bottom: 2rem;
+}
+
+.informes-header h1 {
+  font-size: 1.75rem;
+  color: var(--color-texto-principal, #111827);
+  margin: 0 0 0.5rem 0;
+}
+
+.informes-header p {
+  color: var(--color-texto-secundario, #6b7280);
+  margin: 0;
+}
+
+/* Selector de tienda */
+.selector-tienda {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--color-fondo-suave, #f3f4f6);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-borde, #e5e7eb);
+}
+
+.selector-tienda label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-texto-secundario, #6b7280);
+}
+
+.selector-tienda select {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-borde, #d1d5db);
+  border-radius: 0.375rem;
+  background: white;
+  min-width: 200px;
+}
+
+.selector-tienda select:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+}
+
+.cargando, .error, .aviso {
+  font-size: 0.875rem;
+  margin-left: 0.75rem;
+}
+
+.cargando { color: #6b7280; }
+.error { color: #dc2626; }
+.aviso { color: #ca8a04; }
+
+/* Pestañas */
+.pestanas {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-borde, #e5e7eb);
+  padding-bottom: 0.5rem;
+}
+
+.pestanas button {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-texto-secundario, #6b7280);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.pestanas button:hover {
+  color: var(--color-primario, #c8102e);
+}
+
+.pestanas button.activa {
+  color: var(--color-primario, #c8102e);
+  border-bottom-color: var(--color-primario, #c8102e);
+  font-weight: 600;
+}
+
+/* Paneles */
+.panel {
+  margin-bottom: 2rem;
+  background: white;
+  border: 1px solid var(--color-borde, #e5e7eb);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.panel h3 {
+  font-size: 1.125rem;
+  color: var(--color-texto-principal, #111827);
+  margin: 0 0 1rem 0;
+}
+
+.panel h4 {
+  font-size: 1rem;
+  color: var(--color-texto-principal, #111827);
+  margin: 1rem 0 0.5rem 0;
+}
+
+.panel h5 {
+  font-size: 0.875rem;
+  color: var(--color-texto-secundario, #6b7280);
+  margin: 0.75rem 0 0.5rem 0;
+}
+
+/* Controles de panel */
+.panel-controles {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.panel-controles label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-texto-secundario, #6b7280);
+}
+
+.panel-controles select {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-borde, #d1d5db);
+  border-radius: 0.375rem;
+  background: white;
+}
+
+.panel-controles button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--color-primario, #c8102e);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.panel-controles button:hover:not(:disabled) {
+  background: #a70d20;
+}
+
+.panel-controles button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Estados */
+.estado {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.estado.cargando {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.estado.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.estado.aviso {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+/* Resultado */
+.resultado {
+  margin-top: 1rem;
+}
+
+.resultado-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.resultado-resumen .etiqueta {
+  font-weight: 600;
+  color: var(--color-texto-secundario, #6b7280);
+}
+
+.resultado-resumen .valor {
+  color: var(--color-texto-principal, #111827);
+}
+
+/* Tablas */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+table th,
+table td {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-borde, #e5e7eb);
+}
+
+table th {
+  font-weight: 600;
+  color: var(--color-texto-secundario, #6b7280);
+  background: #f9fafb;
+}
+
+table tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-metrica td:first-child {
+  font-weight: 500;
+  color: var(--color-texto-secundario, #6b7280);
+}
+
+.tabla-metrica td:last-child {
+  font-weight: 600;
+  color: var(--color-texto-principal, #111827);
+}
+
+/* Niveles de riesgo */
+.riesgo-bajo { color: #16a34a; font-weight: 600; }
+.riesgo-medio { color: #ca8a04; font-weight: 600; }
+.riesgo-alto { color: #dc2626; font-weight: 600; }
+.riesgo-critico { color: #991b1b; font-weight: 600; }
+
+/* Niveles de compra */
+.nivel-bajo { color: #16a34a; font-weight: 600; }
+.nivel-medio { color: #ca8a04; font-weight: 600; }
+.nivel-alto { color: #dc2626; font-weight: 600; }
+.nivel-desconocido { color: #6b7280; font-weight: 600; }
+
+/* Predicción destacada */
+.prediccion-destacada {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-borde, #e5e7eb);
+}
+
+.prediccion-destacada .etiqueta {
+  font-weight: 500;
+  color: var(--color-texto-secundario, #6b7280);
+  font-size: 0.875rem;
+}
+
+.prediccion-destacada .valor-grande {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-texto-principal, #111827);
+}
+
+/* Matriz de confusión */
+.matriz-confusion {
+  margin-top: 1rem;
+}
+
+.tabla-matriz th,
+.tabla-matriz td {
+  text-align: center;
+}
+
+.tabla-matriz th:first-child,
+.tabla-matriz td:first-child {
+  text-align: left;
+}
+
+/* Entrenamientos */
+.tabla-entrenamientos {
+  margin-top: 1rem;
+}
+
+.entrenamientos-panel {
+  margin-top: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .informes-container {
+    padding: 1rem;
+  }
+
+  .panel-controles {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-controles select,
+  .panel-controles button {
+    width: 100%;
+  }
+
+  .selector-tienda {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .selector-tienda label {
+    text-align: left;
+  }
+
+  .resultado-resumen {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .prediccion-destacada {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}
