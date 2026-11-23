@@ -6,10 +6,48 @@
       <p>Supervision de plataforma multitenant, infraestructura, auditoria y gobernanza de seguridad.</p>
     </div>
     <div class="head-status-group">
-      <span class="status">Sistema operativo</span>
       <span class="badge badge--admin">Administrador</span>
     </div>
   </header>
+
+  <section class="executive-summary card" aria-labelledby="resumen-ejecutivo">
+    <div class="card__header">
+      <div>
+        <p class="eyebrow">CU31 · Vista general</p>
+        <h2 id="resumen-ejecutivo" class="card__title">Resumen ejecutivo de la plataforma</h2>
+      </div>
+      <a routerLink="/informes" class="btn btn--ghost">Ver análisis completo</a>
+    </div>
+    <p class="card-desc">Indicadores consolidados de los últimos 30 días, comparados con el periodo anterior.</p>
+
+    @if (cargandoResumen()) {
+      <div class="summary-loading" aria-live="polite">Cargando indicadores…</div>
+    } @else if (errorResumen()) {
+      <div class="summary-error" role="status">{{ errorResumen() }}</div>
+      <button type="button" class="btn btn--ghost" (click)="cargarResumen()">Reintentar</button>
+    } @else if (!gruposResumen().length) {
+      <p role="status">No hay indicadores disponibles para este periodo.</p>
+    } @else {
+      <div class="summary-grid">
+        @for (grupo of gruposResumen(); track grupo.clave) {
+          @for (clave of (grupo.clave === 'ventas' ? ['ingresos', 'pedidos', 'ticket_promedio'] : ['ganancia_bruta', 'utilidad_neta', 'margen_bruto_pct']); track clave) {
+            @if (kpi(grupo, clave); as indicador) {
+              <article class="summary-kpi">
+                <span>{{ indicador.titulo }}</span>
+                <strong>{{ formatoValor(indicador.valor, indicador.tipo) }}</strong>
+                @if (indicador.variacion !== null) {
+                  <small [class.positive]="indicador.mejor_si === 'sube' ? indicador.variacion > 0 : indicador.variacion < 0"
+                         [class.negative]="indicador.mejor_si === 'sube' ? indicador.variacion < 0 : indicador.variacion > 0">
+                    {{ formatoVariacion(indicador.variacion, indicador.tipo) }} vs. periodo anterior
+                  </small>
+                }
+              </article>
+            }
+          }
+        }
+      </div>
+    }
+  </section>
 
   <!-- Cuadricula Simetrica Bento Grid -->
   <div class="bento">

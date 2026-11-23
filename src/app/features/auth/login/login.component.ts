@@ -53,7 +53,9 @@ export class LoginComponent {
       error: (err) => {
         this.loading = false;
         const apiError = err.error?.error;
-        if (typeof apiError === 'string') {
+        if (err.status === 0) {
+          this.errorMessage = 'No se pudo conectar con el servidor. Verifica que el backend esté disponible e inténtalo de nuevo.';
+        } else if (typeof apiError === 'string') {
           this.errorMessage = apiError;
         } else if (apiError?.message && typeof apiError.message === 'string') {
           this.errorMessage = apiError.message;
